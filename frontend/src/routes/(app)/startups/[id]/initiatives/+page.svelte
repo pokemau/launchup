@@ -637,8 +637,7 @@
 {:else if isAccessible}
   {@render accessible()}
 {:else}
-  {@render loading()}
-  <!-- {@render fallback()} -->
+  {@render fallback()}
 {/if}
 
 <HoveredRNSCard />
@@ -882,5 +881,13 @@
 {/snippet}
 
 {#snippet fallback()}
-  <h1>Huh</h1>
+  <div class="text-2xl font-bold mt-10 text-center">
+    {#if data.role === 'Startup'}
+      Your mentor has not yet created Readiness and Needs Assessments.
+    {:else if data.role === 'Mentor'}
+      Please create Readiness and Needs Assessments for your startup.
+    {:else}
+      Something went wrong...
+    {/if}
+  </div>
 {/snippet}
