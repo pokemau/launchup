@@ -8,7 +8,9 @@ export type AssessmentField = {
 };
 
 export type Assessment = {
+  id: number;
   name: string;
+  assessmentType: string;
   assessmentStatus: 'Pending' | 'Completed';
   assessmentFields: AssessmentField[];
 };

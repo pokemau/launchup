@@ -115,4 +115,15 @@ export class AssessmentController {
   async getStartupAssessments(@Param('id', ParseIntPipe) startupId: number) {
     return this.assessmentService.getStartupAssessments(startupId);
   }
+
+  @Patch('startup/:startupId/assessment/:assessmentId/complete')
+  async markAssessmentComplete(
+    @Param('startupId', ParseIntPipe) startupId: number,
+    @Param('assessmentId', ParseIntPipe) assessmentId: number,
+  ) {
+    return this.assessmentService.markAssessmentComplete(
+      startupId,
+      assessmentId,
+    );
+  }
 }
