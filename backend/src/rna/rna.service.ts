@@ -10,7 +10,6 @@ import { CreateStartupRnaDto, UpdateStartupRnaDto } from './dto/rna.dto';
 import { ReadinessLevel } from 'src/entities/readiness-level.entity';
 import { StartupReadinessLevel } from 'src/entities/startup-readiness-level.entity';
 import { AiService } from 'src/ai/ai.service';
-import { createBasePrompt } from 'src/ai/utils/prompt.utils';
 import { RnaChatHistory } from 'src/entities/rna-chat-history.entity';
 
 @Injectable()
@@ -269,7 +268,7 @@ export class RnaService {
         'No capsule proposal found for this startup.',
       );
 
-    const basePrompt = await createBasePrompt(startup, this.em);
+    const basePrompt = await this.aiService.createBasePrompt(startup, this.em);
 
     const prompt = `${basePrompt}
 
