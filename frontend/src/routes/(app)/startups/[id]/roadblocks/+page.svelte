@@ -72,6 +72,7 @@
   ]);
 
   const { isLoading, isError } = $derived(useQueriesState($roadblocksQueries));
+  $roadblocksQueries[0].refetch();
   const isAccessible = $derived($roadblocksQueries[0].data);
 
   const columns = $state(getColumns());

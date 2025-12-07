@@ -66,6 +66,7 @@
 
   const rnsQueries = useQueries(queryArray);
   const { isLoading, isError } = $derived(useQueriesState(queryArray));
+  $rnsQueries[0].refetch();
   const isAccessible = $derived($rnsQueries[0].data);
 
   const columns = $state(getColumns());

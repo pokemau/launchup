@@ -67,6 +67,7 @@
   ]);
 
   const { isLoading, isError } = $derived(useQueriesState($initiativesQueries));
+  $initiativesQueries[0].refetch();
   const isAccessible = $derived($initiativesQueries[0].data);
   let selectedTab = $state(getSelectedTab('initiatives'));
 
@@ -142,6 +143,7 @@
       : []
   );
 
+  $initiativesQueries[1].refetch();
   const tasks = $derived(
     $initiativesQueries[1].isSuccess
       ? ($initiativesQueries[1].data as RNSTask[])

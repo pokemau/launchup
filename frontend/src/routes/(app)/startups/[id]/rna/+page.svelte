@@ -40,6 +40,7 @@
   ]);
 
   const { isLoading, isError } = $derived(useQueriesState($rnaQueries));
+  $rnaQueries[0].refetch();
   const isAccessible = $derived($rnaQueries[0].data);
 
   let open = $state(false);
@@ -172,6 +173,8 @@
   {@render error()}
 {:else if isAccessible}
   {@render accessible()}
+{:else if !isAccessible}
+  {@render inaccessible()}
 {:else}
   {@render fallback()}
 {/if}
@@ -252,6 +255,19 @@
         role={data.role}
       ></RnaCard>
     {/each}
+  </div>
+{/snippet}
+
+{#snippet inaccessible()}
+  <div class="text-2xl font-bold mt-10 text-center">
+    {#if data.role === 'Startup'}
+      Your mentor has not yet rated your startup's readiness levels.
+    {:else if data.role === 'Mentor'}
+      Please rate your startup's readiness levels to access the Readiness and
+    Needs Assessment.
+    {:else}
+      Something went wrong...
+    {/if}
   </div>
 {/snippet}
 
