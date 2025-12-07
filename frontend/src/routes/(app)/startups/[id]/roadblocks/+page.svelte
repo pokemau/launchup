@@ -1,30 +1,20 @@
 <script lang="ts">
   import {
-    // AIColumn,
-    // AITabs,
-    Can,
-    Column,
-    KanbanBoard,
     KanbanBoardNew,
     MembersFilter,
     ShowHideColumns
   } from '$lib/components/shared';
   import {
     getData,
-    getColumns,
-    getSavedTab,
-    getSelectedTab,
-    updateTab
+    getColumns
     // getReadiness
   } from '$lib/utils';
   import { useQueriesState } from '$lib/stores/useQueriesState.svelte.js';
   import { useQueries } from '@sveltestack/svelte-query';
-  import * as Card from '$lib/components/ui/card';
   import { page } from '$app/stores';
   import axiosInstance from '$lib/axios.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { toast } from 'svelte-sonner';
-  import { Badge } from '$lib/components/ui/badge/index.js';
   import { RoadblocksCard } from '$lib/components/startups/roadblocks';
   import { RoadblocksCreateDialog } from '$lib/components/startups/roadblocks';
   import { Skeleton } from '$lib/components/ui/skeleton/index.js';
