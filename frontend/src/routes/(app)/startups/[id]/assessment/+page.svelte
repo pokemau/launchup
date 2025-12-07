@@ -99,8 +99,6 @@
 
   function openAssessment(assessmentData: any): void {
 
-  // console.log(assessmentData)
-
     const transformedAssessment = {
       id: assessmentData.assessment.id,
       assessmentType: assessmentData.assessment.assessmentType,
@@ -114,7 +112,7 @@
             ? 'ShortAnswer'
             : field.answerType === 'LongAnswer'
               ? 'LongAnswer'
-              : field.answerType === 'FILE'
+              : field.answerType === 'File'
                 ? 'File'
                 : 'ShortAnswer',
         answer: field.answer?.answerValue || '',
