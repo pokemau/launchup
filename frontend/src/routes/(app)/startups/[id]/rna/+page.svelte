@@ -18,11 +18,11 @@
       queryFn: () => getData(`/startups/${startupId}/allow-rnas/`, access)
     },
     {
-      queryKey: ['rnaData'],
+      queryKey: ['rnaData', startupId],
       queryFn: () => getData(`/rna/?startupId=${startupId}`, access)
     },
     {
-      queryKey: ['readinessData'],
+      queryKey: ['readinessData', startupId],
       queryFn: () =>
         getData(
           `/startups/startup-readiness-level?startupId=${startupId}`,
@@ -30,7 +30,7 @@
         )
     },
     {
-      queryKey: ['startupData'],
+      queryKey: ['startupData', startupId],
       queryFn: () => getData(`/startups/${startupId}`, access)
     },
     {

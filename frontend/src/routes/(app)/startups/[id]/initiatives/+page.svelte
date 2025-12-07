@@ -53,15 +53,15 @@
         getData(`/startups/${startupId}/allow-initiatives/`, access!)
     },
     {
-      queryKey: ['rnsDataInitiative'],
+      queryKey: ['rnsDataInitiative', startupId],
       queryFn: () => getData(`/rns?startupId=${startupId}`, access!)
     },
     {
-      queryKey: ['initiativesData'],
+      queryKey: ['initiativesData', startupId],
       queryFn: () => getData(`/initiatives/?startupId=${startupId}`, access!)
     },
     {
-      queryKey: ['startupData'],
+      queryKey: ['startupData', startupId],
       queryFn: () => getData(`/startups/${startupId}`, access!)
     }
   ]);

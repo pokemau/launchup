@@ -72,11 +72,11 @@
         getData(`/startups/${startupId}/allow-roadblocks/`, access!)
     },
     {
-      queryKey: ['roadblocksData'],
+      queryKey: ['roadblocksData', startupId],
       queryFn: () => getData(`/roadblocks/?startupId=${startupId}`, access!)
     },
     {
-      queryKey: ['startupData'],
+      queryKey: ['startupData', startupId],
       queryFn: () => getData(`/startups/${startupId}`, access!)
     }
   ]);

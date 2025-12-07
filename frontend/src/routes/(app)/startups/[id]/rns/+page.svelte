@@ -47,7 +47,7 @@
       queryFn: () => getData(`/startups/${startupId}/allow-tasks/`, access!)
     },
     {
-      queryKey: ['rnsData'],
+      queryKey: ['rnsData', startupId],
       queryFn: () => getData(`/rns/?startupId=${startupId}`, access!)
     },
     {
@@ -55,11 +55,11 @@
       queryFn: () => getData(`/readinesslevel/readiness-levels/`, access!)
     },
     {
-      queryKey: ['startupData'],
+      queryKey: ['startupData', startupId],
       queryFn: () => getData(`/startups/${startupId}`, access!)
     },
     {
-      queryKey: ['rnaData'],
+      queryKey: ['rnaData', startupId],
       queryFn: () => getData(`/rna/?startupId=${startupId}`, access!)
     }
   ];

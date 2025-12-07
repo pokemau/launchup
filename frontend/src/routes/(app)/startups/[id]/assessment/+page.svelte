@@ -96,9 +96,7 @@
 
   let selectedAssessment = $state<any | null>(null);
 
-
   function openAssessment(assessmentData: any): void {
-
     const transformedAssessment = {
       id: assessmentData.assessment.id,
       assessmentType: assessmentData.assessment.assessmentType,
