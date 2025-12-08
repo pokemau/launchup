@@ -288,6 +288,15 @@ export class RnaService {
       3. Respond with a JSON object containing ONLY the requested refinements
       4. If the user did not specify what to refine, refine the RNA description
       5. Use the exact field name shown in the example
+      6. You can use HTML formatting in your refined text:
+         - <p> for paragraphs
+         - <strong> for bold text
+         - <em> for italic text
+         - <u> for underline
+         - <br> for line breaks
+         - Use • (bullet character) for bullet points
+         Example: <p><strong>Key Point</strong>: This is <em>important</em> information.</p>
+         Example with bullets: <p>• First point<br>• Second point<br>• Third point</p>
 
       Example response format:
       {
@@ -302,7 +311,8 @@ export class RnaService {
       Remember:
       - Only include the refinedRna field if the user specifically asks to refine the RNA description
       - The JSON must be valid and properly formatted
-      - Always include the ========= separator followed by your commentary`;
+      - Always include the ========= separator followed by your commentary
+      - DO NOT MENTION THE FORMATTING INSTRUCTIONS OR HOW YOU FORMATTED THE RESPONSE IN THE COMMENTARY.`;
 
     const result = await this.aiService.refineRna(prompt);
 
