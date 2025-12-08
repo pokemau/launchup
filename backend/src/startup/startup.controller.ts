@@ -24,6 +24,7 @@ import {
   WaitlistStartupDto,
   AppointMentorsDto,
   ChangeMentorDto,
+  UpdateCapsuleProposalDto,
 } from './dto';
 
 @UseGuards(JwtGuard)
@@ -232,6 +233,26 @@ export class StartupController {
     @Param('startupId', ParseIntPipe) startupId: number,
   ): Promise<boolean> {
     return this.startupService.allowRoadblocks(startupId);
+  }
+
+  @Patch(':startupId/capsule-proposal')
+  async updateCapsuleProposalFields(
+    @Param('startupId', ParseIntPipe) startupId: number,
+    @Body() dto: UpdateCapsuleProposalDto,
+  ) {
+    console.log('=== PATCH /startups/:startupId/capsule-proposal ===');
+    console.log('Startup ID:', startupId);
+    console.log('Request Body:', JSON.stringify(dto, null, 2));
+
+    const result = await this.startupService.updateCapsuleProposalFields(
+      startupId,
+      dto,
+    );
+
+    console.log('Response:', JSON.stringify(result, null, 2));
+    console.log('=== End PATCH /startups/:startupId/capsule-proposal ===');
+
+    return result;
   }
 
   @Patch(':id')

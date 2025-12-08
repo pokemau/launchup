@@ -33,11 +33,11 @@ const startupModule = {
       link: 'roadblocks',
       subModule: []
     },
-    {
-      name: 'Progress',
-      link: 'progress-report',
-      subModule: []
-    },
+    // {
+    //   name: 'Progress',
+    //   link: 'progress-report',
+    //   subModule: []
+    // },
     {
       name: 'Overview',
       link: 'overview',

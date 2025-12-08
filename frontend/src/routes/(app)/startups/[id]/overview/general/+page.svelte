@@ -32,36 +32,43 @@
 </svelte:head>
 <div class="flex flex-col gap-5">
   <h1 class="text-xl font-semibold">General</h1>
-  <div class="grid w-2/3 grid-cols-1 gap-5">
-    <div class="grid gap-2">
-      <Label for="firstName">Startup Name</Label>
-      {#if $queryResult.isLoading}
-        <Skeleton class="h-10" />
-      {:else}
-        <Input
-          name="firstName"
-          id="firstName"
-          type="firstName"
-          required
-          readonly
-          value={$queryResult.data.name}
-        />
-      {/if}
+  {#if $queryResult.isError}
+    <div class="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
+      <p class="font-medium">Failed to load startup data</p>
+      <p class="text-sm">Please try refreshing the page</p>
     </div>
-    <div class="grid gap-2">
-      <Label for="lastName">Group Name</Label>
-      {#if $queryResult.isLoading}
-        <Skeleton class="h-10" />
-      {:else}
-        <Input
-          name="lastName"
-          id="lastName"
-          type="lastName"
-          required
-          readonly
-          value={$queryResult.data.groupName}
-        />
-      {/if}
+  {:else}
+    <div class="grid w-2/3 grid-cols-1 gap-5">
+      <div class="grid gap-2">
+        <Label for="firstName">Startup Name</Label>
+        {#if $queryResult.isLoading}
+          <Skeleton class="h-10" />
+        {:else}
+          <Input
+            name="firstName"
+            id="firstName"
+            type="text"
+            required
+            readonly
+            value={$queryResult.data.name}
+          />
+        {/if}
+      </div>
+      <div class="grid gap-2">
+        <Label for="lastName">Group Name</Label>
+        {#if $queryResult.isLoading}
+          <Skeleton class="h-10" />
+        {:else}
+          <Input
+            name="lastName"
+            id="lastName"
+            type="text"
+            required
+            readonly
+            value={$queryResult.data.groupName}
+          />
+        {/if}
+      </div>
     </div>
-  </div>
+  {/if}
 </div>

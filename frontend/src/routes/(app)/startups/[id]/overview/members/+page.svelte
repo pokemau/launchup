@@ -32,7 +32,6 @@
     }
   );
 
-  let members: any = [];
   let search: string;
   let searchedUsers: any[] = [];
 
@@ -48,7 +47,7 @@
     );
     const d = await response.json();
     if (response.ok) {
-      const membersSet = new Set(members.map((member: any) => member.id)); // Assuming each user has a unique id
+      const membersSet = new Set($queryResult.data.members.map((member: any) => member.id));
       searchedUsers = d.filter((user: any) => !membersSet.has(user.id));
       search = '';
     }
@@ -145,8 +144,14 @@
   <title>Settings - Members</title>
 </svelte:head>
 <div class="flex flex-col gap-5">
-  {#if $queryResult.isSuccess}
-    {#if data.role === 'Mentor' || data.role === 'Manager as Mentor' || data.user.id === $queryResult.data.user_id}
+  {#if $queryResult.isError}
+    <div class="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
+      <p class="font-medium">Failed to load member data</p>
+      <p class="text-sm">Please try refreshing the page</p>
+    </div>
+  {:else}
+    {#if $queryResult.isSuccess}
+      {#if data.role === 'Mentor' || data.role === 'Manager as Mentor' || data.user.id === $queryResult.data.user_id}
       <h1 class="text-xl font-semibold">Invite Member</h1>
       <div class="flex items-center space-x-2">
         <Switch id="airplane-mode" bind:checked={outsideMember} />
@@ -211,13 +216,13 @@
           {/each}
         {/if}
       {/if}
+      {/if}
     {/if}
-  {/if}
-  <h1 class="text-xl font-semibold">Members</h1>
-  <div class="w-2/3 rounded-md border">
-    {#if $queryResult.isLoading}
-      <Skeleton class="h-40" />
-    {:else}
+    <h1 class="text-xl font-semibold">Members</h1>
+    <div class="w-2/3 rounded-md border">
+      {#if $queryResult.isLoading}
+        <Skeleton class="h-40" />
+      {:else}
       <Table.Root class="rounded-lg bg-background">
         <Table.Header>
           <Table.Row class="text-centery h-12">
@@ -275,8 +280,9 @@
           {/each}
         </Table.Body>
       </Table.Root>
-    {/if}
-  </div>
+      {/if}
+    </div>
+  {/if}
 </div>
 <AlertDialog.Root bind:open onOpenChange={() => (open = !open)}>
   <AlertDialog.Content>

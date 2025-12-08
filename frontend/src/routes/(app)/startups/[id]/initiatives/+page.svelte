@@ -44,6 +44,9 @@
   import { ChevronDown } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
 
+
+  let dropdownOpen = $state(false);
+
   const { data } = $props();
   const { access, startupId } = data;
   const initiativesQueries = useQueries([
@@ -766,7 +769,7 @@
               <Sparkles class="h-4 w-4" />Generate
             {/if}
           </Button>
-          <DropdownMenu.Root>
+          <DropdownMenu.Root bind:open={dropdownOpen}>
             <DropdownMenu.Trigger>
               <Button
                 class="rounded-bl-none rounded-tl-none border-l border-primary/20 bg-primary px-2 py-2 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"

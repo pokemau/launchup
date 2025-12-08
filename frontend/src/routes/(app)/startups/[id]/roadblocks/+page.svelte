@@ -32,6 +32,8 @@
   import * as Table from '$lib/components/ui/table';
   import { Button } from '$lib/components/ui/button';
 
+  let dropdownOpen = $state(false);
+
   interface Member {
     userId: number;
     startupId: number;
@@ -594,7 +596,7 @@
               <Sparkles class="h-4 w-4" />Generate
             {/if}
           </Button>
-          <DropdownMenu.Root>
+          <DropdownMenu.Root bind:open={dropdownOpen}>
             <DropdownMenu.Trigger>
               <Button
                 class="border-primary/20 hover:bg-primary/90 rounded-bl-none rounded-tl-none border-l bg-primary px-2 py-2 text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
