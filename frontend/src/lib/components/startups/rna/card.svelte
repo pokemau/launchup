@@ -7,10 +7,6 @@
 
   let open = $state(false);
 
-  const onOpenChange = () => {
-    open = !open;
-  };
-
   const closeDialog = () => {
     open = false;
   };
@@ -41,8 +37,7 @@
 
 {#if role === 'Startup'}
   <RnaViewEditDeleteDialog
-    {open}
-    {onOpenChange}
+    bind:open
     {rna}
     {update}
     {deleteRna}
@@ -53,8 +48,7 @@
   />
 {:else}
   <RnaViewEditDeleteAiDialog
-    {open}
-    {onOpenChange}
+    bind:open
     {rna}
     {update}
     {deleteRna}

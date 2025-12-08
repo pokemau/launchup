@@ -22,8 +22,7 @@
   };
 
   let {
-    open,
-    onOpenChange,
+    open = $bindable(),
     rna,
     update,
     deleteRna,
@@ -37,7 +36,7 @@
   let isLoadingHistory = $state(false);
 
   function handleDialogStateChange(newOpen: boolean) {
-    onOpenChange(newOpen);
+    open = newOpen;
     if (!newOpen) {
       closeDialog();
     }
@@ -171,17 +170,31 @@
                       Here's my suggestion for improving your RNA:
                       {#if message.refinedRna}
                         <div
-                          class="group relative my-2 rounded-lg bg-[#0a1729] p-4 pb-8"
+                          class="prose prose-invert group relative my-2 rounded-lg bg-[#0a1729] p-4 pb-8"
                         >
-                          <strong>RNA Description:</strong>
-                          <div>{message.refinedRna}</div>
+                          {@html message.refinedRna}
                           <button
                             class="absolute bottom-2 right-2 flex items-center gap-1 text-sm text-gray-400 opacity-50 transition-opacity hover:text-white hover:opacity-100"
-                            onclick={(e) => {
-                              const button =
-                                e.currentTarget as HTMLButtonElement;
-                              const text = message.refinedRna ?? '';
-                              navigator.clipboard.writeText(text);
+                            onclick={async (e) => {
+                              const button = e.currentTarget as HTMLButtonElement;
+                              const container = button.parentElement;
+                              if (!container) return;
+                              
+                              // Get the HTML content (excluding the button)
+                              const htmlContent = message.refinedRna || '';
+                              
+                              try {
+                                // Copy both HTML and plain text to clipboard
+                                await navigator.clipboard.write([
+                                  new ClipboardItem({
+                                    'text/html': new Blob([htmlContent], { type: 'text/html' }),
+                                    'text/plain': new Blob([container.textContent?.replace('Copy', '').trim() || ''], { type: 'text/plain' })
+                                  })
+                                ]);
+                              } catch (err) {
+                                // Fallback to plain text if HTML copy fails
+                                navigator.clipboard.writeText(htmlContent);
+                              }
                             }}
                           >
                             <svg
@@ -198,8 +211,10 @@
                             Copy
                           </button>
                         </div>
+                        {@html message.content}
+                      {:else}
+                        {@html message.content}
                       {/if}
-                      {message.content}
                     </div>
                   {/if}
                 </div>
