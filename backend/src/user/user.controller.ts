@@ -26,8 +26,11 @@ export class UserController {
   }
 
   @Get('search')
-  async getUserByString(@Query('search') query: string) {
-    return await this.userService.getUserByString(query);
+  async getUserByString(
+    @Query('search') query: string,
+    @Query('role') role?: Role,
+  ) {
+    return await this.userService.getUserByString(query, role);
   }
 
   @Patch('profile')

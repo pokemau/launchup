@@ -31,10 +31,20 @@ export class UserService {
     });
   }
 
-  async getUserByString(query: string) {
-    return await this.em.find(User, {
-      email: { $ilike: `%${query}%` },
-    });
+  async getUserByString(query: string, role?: Role) {
+    const whereCondition: any = {
+      $or: [
+        { email: { $ilike: `%${query}%` } },
+        { firstName: { $ilike: `%${query}%` } },
+        { lastName: { $ilike: `%${query}%` } },
+      ],
+    };
+
+    if (role) {
+      whereCondition.role = role;
+    }
+
+    return await this.em.find(User, whereCondition);
   }
 
   async update(id: number, data: Partial<User>): Promise<User | null> {

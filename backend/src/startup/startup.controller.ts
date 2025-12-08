@@ -81,54 +81,6 @@ export class StartupController {
     };
   }
 
-  // @Post('/create-startup')
-  // @UseInterceptors(FileInterceptor('capsuleProposal'))
-  // async createStartup(
-  //   @Body() dto: StartupApplicationDto,
-  //   @UploadedFile() file: Express.Multer.File,
-  // ) {
-  //   // If a capsule proposal file is uploaded, parse and create CapsuleProposal
-  //   if (file) {
-  //     try {
-  //       const data = await PdfParse(file.buffer);
-  //       let res = await this.aiService.getCapsuleProposalInfo(data.text);
-  //       if (res) {
-  //         res = res.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-  //         const parsed = JSON.parse(res);
-  //
-  //         const capsuleProposalDto: CreateCapsuleProposalDto = {
-  //           title: dto.name,
-  //           description: parsed.startup_description,
-  //           problemStatement: parsed.problem_statement,
-  //           targetMarket: parsed.target_market,
-  //           solutionDescription: parsed.solution_description,
-  //           objectives: parsed.objectives,
-  //           scope: parsed.scope,
-  //           methodology: parsed.methodology,
-  //           startupId: -1, //placeholder
-  //           fileName: file.originalname,
-  //         };
-  //         const startup = await this.startupService.createStartup(dto);
-  //         capsuleProposalDto.startupId = startup.id;
-  //         await this.startupService.createCapsuleProposal(capsuleProposalDto);
-  //         console.log('CapsuleProposal created successfully');
-  //         return startup;
-  //       } else {
-  //         console.log('AI service did not return a result');
-  //         throw new BadRequestException('AI service did not return a result');
-  //       }
-  //     } catch (error) {
-  //       console.error('Failed to parse and create capsule proposal:', error);
-  //       throw new BadRequestException(
-  //         'Failed to parse and create capsule proposal: ' + error.message,
-  //       );
-  //     }
-  //   } else {
-  //     console.log('No capsule proposal file uploaded');
-  //     throw new BadRequestException('No capsule proposal file uploaded');
-  //   }
-  // }
-
   @Post('add-member')
   async addMemberToStartup(@Body() dto: any) {
     return await this.startupService.addMemberToStartup(dto);
@@ -140,27 +92,6 @@ export class StartupController {
     @Body('startupId', ParseIntPipe) startupId: number,
   ) {
     return await this.startupService.removeMemberFromStartup(userId, startupId);
-  }
-
-  @Post('/parse-capsule-proposal')
-  @UseInterceptors(FileInterceptor('capsuleProposal'))
-  async getCapsuleProposal(@UploadedFile() file: Express.Multer.File) {
-    // try {
-    //   if (!file) {
-    //     throw new BadRequestException('No file uploaded');
-    //   }
-    //
-    //   const data = await PdfParse(file.buffer);
-    //   let res = await this.aiService.getCapsuleProposalInfo(data.text);
-    //
-    //   if (res) {
-    //     res = res.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    //     return JSON.parse(res);
-    //   }
-    // } catch (error) {
-    //   console.error(error);
-    //   throw new BadRequestException('Failed to process PDF');
-    // }
   }
 
   @Get(':startupId')

@@ -135,6 +135,11 @@ export class StartupService {
       });
 
       await this.em.persistAndFlush(startup);
+
+      // Add the startup leader/owner to the members collection
+      startup.members.add(user);
+      await this.em.flush();
+
       await this.createStartupProposal(startup, dto);
 
       return startup;
@@ -359,25 +364,34 @@ export class StartupService {
   }
 
   async addMemberToStartup(dto: any) {
-    // const startup = await this.em.findOne(Startup, { id: dto.startupId });
-    // if (!startup) {
-    //   throw new NotFoundException(
-    //     `Startup with ID ${dto.startupId} does not exist.`,
-    //   );
-    // }
-    //
-    // const user = await this.em.findOne(User, { id: dto.userId });
-    // if (!user) {
-    //   throw new NotFoundException(
-    //     `User with ID ${dto.startupId} does not exist.`,
-    //   );
-    // }
-    //
-    // startup.members.add(user);
-    // await this.em.flush();
-    // return {
-    //   message: `User with ID ${dto.userId} has been added to Startup ID ${dto.startupId}.`,
-    // };
+    const startup = await this.em.findOne(
+      Startup,
+      { id: dto.startupId },
+      { populate: ['members'] },
+    );
+
+    if (!startup) {
+      throw new NotFoundException(
+        `Startup with ID ${dto.startupId} does not exist.`,
+      );
+    }
+    const user = await this.em.findOne(User, { id: dto.userId });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${dto.userId} does not exist.`);
+    }
+
+    if (startup.members.contains(user)) {
+      throw new BadRequestException(
+        `User is already a member of this startup.`,
+      );
+    }
+    startup.members.add(user);
+    await this.em.flush();
+
+    return {
+      message: `User with ID ${dto.userId} has been added to Startup ID ${dto.startupId}.`,
+    };
   }
 
   async getPendingStartupsRankingByUrat() {
@@ -1005,6 +1019,10 @@ export class StartupService {
 
     try {
       await this.em.persistAndFlush(startup);
+
+      // Add the startup leader/owner to the members collection
+      startup.members.add(user);
+      await this.em.flush();
     } catch (e: any) {
       // Handle out-of-sync sequence: duplicate key on startups_pkey
       const msg = String(e?.message ?? '');
@@ -1017,6 +1035,10 @@ export class StartupService {
           );
         // Retry once
         await this.em.persistAndFlush(startup);
+
+        // Add the startup leader/owner to the members collection
+        startup.members.add(user);
+        await this.em.flush();
       } else {
         throw e;
       }
