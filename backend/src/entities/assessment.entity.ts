@@ -1,22 +1,34 @@
-import { Entity, PrimaryKey, Property, ManyToOne, OneToMany, Collection, Enum } from "@mikro-orm/core";
-import { AssessmentAnswerType } from "./enums/assessment-util.enum";
-import { StartupResponse } from "./startup-response.entity";
-import { AssessmentType } from "./assessment-type.entity";
+import {
+  Entity,
+  PrimaryKey,
+  Property,
+  OneToMany,
+  Collection,
+  Enum,
+} from '@mikro-orm/core';
+import { AssessmentType } from './enums/assessment-type.enum';
+import { AssessmentField } from './assessment-field.entity';
+import { StartupAssessment } from './startup-assessment.entity';
 
-@Entity({ tableName: "assessments" })
+@Entity({ tableName: 'assessments' })
 export class Assessment {
   @PrimaryKey({ autoincrement: true })
-  assessment_id!: number;
+  id!: number;
 
-  @ManyToOne(() => AssessmentType, { deleteRule: 'cascade' })
+  @Enum(() => AssessmentType)
   assessmentType!: AssessmentType;
 
   @Property()
-  description!: string; // e.g. "Dean's Response"
+  name!: string;
 
-  @Enum(() => AssessmentAnswerType)
-  answerType!: AssessmentAnswerType; // "File" | "LongAnswer" | etc.
+  @OneToMany(
+    () => AssessmentField,
+    (field) => {
+      return field.assessment;
+    },
+  )
+  fields = new Collection<AssessmentField>(this);
 
-  @OneToMany(() => StartupResponse, r => r.assessment)
-  responses = new Collection<StartupResponse>(this);
+  @OneToMany(() => StartupAssessment, (sa) => sa.assessment)
+  startupAssessments = new Collection<StartupAssessment>(this);
 }

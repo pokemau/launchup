@@ -20,36 +20,109 @@
     mentorId: number
   ) => Promise<void>;
   export let startupAssessments: Array<{
-    id?: number;
-    name: string;
-    assessmentStatus: string;
-    assessmentFields?: any[];
+    id: number;
+    assessment: {
+      id: number;
+      assessmentType: string;
+      name: string;
+    };
+    status: string;
+    fields: Array<{
+      id: number;
+      description: string;
+      answerType: string;
+      answer?: {
+        answerValue?: string;
+        fileUrl?: string;
+        fileName?: string;
+      };
+    }>;
   }> = [];
-  export let assessments: {id: number, name: string, fields: {id: number, label: string, fieldType: number}[]}[] = [];
-  export let assignAssessmentsToStartup: (startupId: number, assessmentTypeIds: number[]) => Promise<any>;
-  export let refetchStartupAssessments: ((startupId: number) => Promise<void>) | undefined = undefined;
+  export let assessments: Array<{
+    name: string;
+    assessments: Array<{ id: number; name: string; fieldsCount: number }>;
+  }> = [];
+  export let assignAssessmentsToStartup: (
+    startupId: number,
+    assessmentTypeIds: number[]
+  ) => Promise<any>;
+  export let refetchStartupAssessments:
+    | ((startupId: number) => Promise<void>)
+    | undefined = undefined;
+  export let access: string;
 
   let showConfirmCompleteModal = false;
   let selectedMentorId: string;
-  
+
   // Edit assessments state
   let showEditAssessments = false;
   let selectedAssessments = new Set<number>();
   let previewOpen = false;
-  let previewAssessment: { id: number; name: string; fields: { id: number; label: string; fieldType: number }[] } | null = null;
+  let previewAssessment: {
+    id: number;
+    name: string;
+    fields?: { id: number; label: string; fieldType: number }[];
+  } | null = null;
   let isLoadingAssessments = false;
 
   const memberCount = getStartupMemberCount(startup);
 
   $: statusColors = getBadgeColorObject('Qualified');
 
+  // Flatten assessments with type info
+  $: flatAssessments = assessments
+    .filter((group) => group.assessments.length > 0)
+    .flatMap((group) =>
+      group.assessments.map((asmt) => ({
+        ...asmt,
+        assessmentType: group.name
+      }))
+    );
+
+  // Group flat assessments by type for UI display
+  $: groupedAssessments = flatAssessments.reduce(
+    (acc, asmt) => {
+      const type = asmt.assessmentType || 'Other';
+      if (!acc[type]) {
+        acc[type] = [];
+      }
+      acc[type].push(asmt);
+      return acc;
+    },
+    {} as Record<string, typeof flatAssessments>
+  );
+
+  // Create a display-friendly version with assessment details at top level
+  $: displayAssessments = startupAssessments.map(sa => ({
+    id: sa.id,
+    name: sa.assessment.name,
+    assessmentType: sa.assessment.assessmentType,
+    assessmentId: sa.assessment.id,
+    status: sa.status,
+    fields: sa.fields
+  }));
+
+  // Helper function to get status badge color
+  function getStatusColor(status: string): string {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'bg-green-100 border-green-300 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 border-yellow-300 text-yellow-800';
+      case 'in_progress':
+        return 'bg-blue-100 border-blue-300 text-blue-800';
+      default:
+        return 'bg-secondary/10 border-border text-foreground';
+    }
+  }
+
   // Initialize selectedAssessments from startupAssessments
   $: {
-    if (startup && startupAssessments.length > 0 && !showEditAssessments) {
+    if (startup && displayAssessments.length > 0 && !showEditAssessments) {
       selectedAssessments = new Set(
-        startupAssessments
-          .map(a => assessments.find(asmt => asmt.name === a.name)?.id)
-          .filter(id => id !== undefined) as number[]
+        displayAssessments
+          .map((a) => flatAssessments.find((asmt) => asmt.name === a.name)?.id)
+          .filter((id) => id !== undefined) as number[]
       );
     }
   }
@@ -64,13 +137,32 @@
   $: showSaveMentorButton =
     selectedMentorId && selectedMentorId !== String(startup?.mentors?.[0]?.id);
 
-  function toggleAssessment(id: number) {
+  function toggleAssessment(id: number, assessmentType: string) {
     const next = new Set(selectedAssessments);
-    if (next.has(id)) next.delete(id); else next.add(id);
+
+    // Find all assessments of the same type
+    const sameTypeAssessments = flatAssessments
+      .filter((a) => a.assessmentType === assessmentType)
+      .map((a) => a.id);
+
+    // If clicking the already selected assessment, uncheck it
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      // Remove all other assessments of the same type
+      sameTypeAssessments.forEach((asmtId) => next.delete(asmtId));
+      // Add the newly selected assessment
+      next.add(id);
+    }
+
     selectedAssessments = next;
   }
 
-  function openPreview(asmt: { id: number; name: string; fields: { id: number; label: string; fieldType: number }[] }) {
+  function openPreview(asmt: {
+    id: number;
+    name: string;
+    fields?: { id: number; label: string; fieldType: number }[];
+  }) {
     previewAssessment = asmt;
     previewOpen = true;
   }
@@ -83,9 +175,9 @@
     showEditAssessments = false;
     // Reset selectedAssessments to original
     selectedAssessments = new Set(
-      startupAssessments
-        .map(a => assessments.find(asmt => asmt.name === a.name)?.id)
-        .filter(id => id !== undefined) as number[]
+      displayAssessments
+        .map((a) => flatAssessments.find((asmt) => asmt.name === a.name)?.id)
+        .filter((id) => id !== undefined) as number[]
     );
   }
 
@@ -96,13 +188,16 @@
     }
     isLoadingAssessments = true;
     try {
-      await assignAssessmentsToStartup(startup.id, Array.from(selectedAssessments));
-      
+      await assignAssessmentsToStartup(
+        startup.id,
+        Array.from(selectedAssessments)
+      );
+
       // Refetch startup assessments if function is provided
       if (refetchStartupAssessments) {
         await refetchStartupAssessments(startup.id);
       }
-      
+
       toast.success('Assessments updated successfully');
       showEditAssessments = false;
     } catch (error) {
@@ -163,8 +258,8 @@
             <div class="mb-2 flex items-center justify-between">
               <h3 class="text-lg font-medium">Assigned Assessments</h3>
               {#if !showEditAssessments}
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
                   onclick={() => (showEditAssessments = true)}
                   class="gap-2"
@@ -174,44 +269,61 @@
                 </Button>
               {/if}
             </div>
-            
+
             {#if showEditAssessments}
-              <!-- Edit Mode - Checkbox Selection -->
-              <p class="text-sm text-muted-foreground mb-4">
-                Select assessments for this startup to complete
+              <!-- Edit Mode - Radio Selection Grouped by Type -->
+              <p class="mb-4 text-sm text-muted-foreground">
+                Select one assessment per type for this startup to complete
               </p>
-              {#if assessments && assessments.length > 0}
-                <div class="space-y-3 mb-4">
-                  {#each assessments as asmt (asmt.id)}
-                    <Card.Root class="border bg-secondary/10">
-                      <div class="flex items-center justify-between p-3">
-                        <label class="flex items-center gap-3 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            class="h-4 w-4 accent-primary"
-                            checked={selectedAssessments.has(asmt.id)}
-                            on:change={() => toggleAssessment(asmt.id)}
-                          />
-                          <span class="text-foreground font-medium">{asmt.name}</span>
-                        </label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onclick={() => openPreview(asmt)}
-                          class="shrink-0"
-                        >
-                          View Details
-                        </Button>
+              {#if flatAssessments && flatAssessments.length > 0}
+                <div class="mb-4 space-y-4">
+                  {#each Object.entries(groupedAssessments) as [type, typeAssessments]}
+                    <div class="space-y-2">
+                      <h4 class="text-sm font-semibold text-foreground">
+                        {type}
+                      </h4>
+                      <div class="space-y-2">
+                        {#each typeAssessments as asmt (asmt.id)}
+                          <Card.Root class="bg-secondary/10 border">
+                            <div class="flex items-center justify-between p-3">
+                              <label
+                                class="flex cursor-pointer select-none items-center gap-3"
+                              >
+                                <input
+                                  type="radio"
+                                  name="assessment-{type}"
+                                  class="h-4 w-4 accent-primary"
+                                  checked={selectedAssessments.has(asmt.id)}
+                                  on:change={() =>
+                                    toggleAssessment(asmt.id, type)}
+                                />
+                                <span class="font-medium text-foreground"
+                                  >{asmt.name}</span
+                                >
+                              </label>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onclick={() => openPreview(asmt)}
+                                class="shrink-0"
+                              >
+                                View Details
+                              </Button>
+                            </div>
+                          </Card.Root>
+                        {/each}
                       </div>
-                    </Card.Root>
+                    </div>
                   {/each}
                 </div>
               {:else}
-                <p class="text-sm text-muted-foreground mb-4">No assessments available.</p>
+                <p class="mb-4 text-sm text-muted-foreground">
+                  No assessments available.
+                </p>
               {/if}
-              
+
               <!-- Action buttons for edit mode -->
-              <div class="flex gap-2 justify-end">
+              <div class="flex justify-end gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -223,24 +335,25 @@
                 <Button
                   size="sm"
                   onclick={handleSaveAssessments}
-                  disabled={selectedAssessments.size === 0 || isLoadingAssessments}
+                  disabled={selectedAssessments.size === 0 ||
+                    isLoadingAssessments}
                 >
                   {isLoadingAssessments ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             {:else}
               <!-- Read-only view -->
-              {#if startupAssessments.length === 0}
+              {#if displayAssessments.length === 0}
                 <p class="text-sm text-muted-foreground">
                   No assessments assigned.
                 </p>
               {:else}
                 <div class="flex flex-wrap gap-2">
-                  {#each startupAssessments as a}
+                  {#each displayAssessments as a}
                     <span
-                      class="bg-secondary/10 rounded-full border border-border px-3 py-1 text-sm font-medium text-foreground"
+                      class="rounded-full border px-3 py-1 text-sm font-medium {getStatusColor(a.status)}"
                     >
-                      {a.name}
+                      {a.name} ({a.assessmentType})
                     </span>
                   {/each}
                 </div>
@@ -522,11 +635,12 @@
             (showConfirmCompleteModal = !showConfirmCompleteModal)}
           onConfirm={handleMarkAsComplete}
         />
-        
-        <AssessmentPreviewDialog 
-          open={previewOpen} 
-          onOpenChange={closePreview} 
+
+        <AssessmentPreviewDialog
+          open={previewOpen}
+          onOpenChange={closePreview}
           assessment={previewAssessment}
+          {access}
         />
       </div>
     </Dialog.Content>

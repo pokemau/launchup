@@ -22,11 +22,22 @@
   let dialogLoading = false;
   let showDialog = false;
   let selectedStartup: any = null;
-  let startupAssessments: Array<{ name: string; assessmentStatus: string; assessmentFields?: any[] }> = [];
+  let startupAssessments: Array<{
+    name: string;
+    assessmentStatus: string;
+    assessmentFields?: any[];
+  }> = [];
 
   async function fetchStartupAssessments(startupId: number) {
     try {
-      const { data } = await axiosInstance.get(`/assessments/startup/${startupId}`);
+      const { data } = await axiosInstance.get(
+        `/assessments/startup/${startupId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${access}`
+          }
+        }
+      );
       startupAssessments = data ?? [];
     } catch (e) {
       console.error('Failed to load startup assessments', e);
@@ -50,9 +61,11 @@
     }
   }
 
-
   // Assign multiple assessments to a startup
-  async function assignAssessmentsToStartup(startupId: number, assessmentTypeIds: number[]) {
+  async function assignAssessmentsToStartup(
+    startupId: number,
+    assessmentTypeIds: number[]
+  ) {
     try {
       // Send all assessmentTypeIds in a single request as required by backend
       const response = await axiosInstance.post(
@@ -97,7 +110,7 @@
             Authorization: `Bearer ${access}`
           },
           body: JSON.stringify({
-            mentorIds: [selectedMentor],
+            mentorIds: [selectedMentor]
           })
         }
       );
@@ -108,7 +121,7 @@
           $queries[1].refetch(),
           $queries[2].refetch()
         ]);
-        
+
         // Close the dialog
         showDialog = false;
         selectedStartup = null;
@@ -138,7 +151,7 @@
           $queries[1].refetch(),
           $queries[2].refetch()
         ]);
-        
+
         // Close the dialog
         showDialog = false;
         selectedStartup = null;
@@ -151,16 +164,20 @@
   }
 
   async function getAssessmentTypesWithFields() {
-    const { data: types } = await axiosInstance.get('/assessments/types');
+    const { data: grouped } = await axiosInstance.get('/assessments/grouped', {
+      headers: {
+        Authorization: `Bearer ${data.access}`
+      }
+    });
 
-    const fieldsByType = await Promise.all(
-      types.map(async (t: { id: number }) => {
-        const { data: fields } = await axiosInstance.get(`/assessments/types/${t.id}/fields`);
-        return { ...t, fields };
+    const assessmentTypes = Object.entries(grouped).map(
+      ([typeName, assessments]) => ({
+        name: typeName,
+        assessments: assessments
       })
     );
 
-    return fieldsByType;
+    return assessmentTypes;
   }
 
   const queries = useQueries([
@@ -192,11 +209,10 @@
     },
     {
       queryKey: ['assessments'],
-      queryFn: async () =>
-      getAssessmentTypesWithFields(),
+      queryFn: async () => getAssessmentTypesWithFields(),
       cacheTime: 0,
       staleTime: 0
-    },
+    }
   ]);
 
   async function markComplete(startupId: number) {
@@ -213,11 +229,8 @@
       );
       if (response.status === 200) {
         // Refetch the queries
-        await Promise.all([
-          $queries[0].refetch(),
-          $queries[1].refetch()
-        ]);
-        
+        await Promise.all([$queries[0].refetch(), $queries[1].refetch()]);
+
         // Close the dialog
         showDialog = false;
         selectedStartup = null;
@@ -243,13 +256,12 @@
       );
       if (response.status === 200) {
         // Refetch the queries to update the data
-        await Promise.all([
-          $queries[0].refetch(),
-          $queries[1].refetch()
-        ]);
-        
+        await Promise.all([$queries[0].refetch(), $queries[1].refetch()]);
+
         // Update the selectedStartup with new data
-        const updatedStartup = $queries[0].data.find((s: any) => s.id === startupId);
+        const updatedStartup = $queries[0].data.find(
+          (s: any) => s.id === startupId
+        );
         if (updatedStartup) {
           selectedStartup = updatedStartup;
         }
@@ -292,7 +304,7 @@
 </svelte:head>
 
 {#if $queries[0].isLoading || $queries[1].isLoading || $queries[2].isLoading}
-  <div class="flex items-center justify-center h-64">
+  <div class="flex h-64 items-center justify-center">
     <div class="flex items-center gap-3">
       <div class="loader"></div>
       <span>Fetching applications...</span>
@@ -301,10 +313,11 @@
 {:else}
   {@const mentors = $queries[1].data}
   {@const assessments = $queries[2].data}
+  {console.log(assessments)}
   <div class="flex flex-col gap-3">
     <div class="flex justify-between rounded-lg bg-background">
       <Tabs.Root value={selectedTab}>
-        <Tabs.List class="border bg-flutter-gray/20">
+        <Tabs.List class="bg-flutter-gray/20 border">
           <Tabs.Trigger
             value="pending"
             onclick={() => {
@@ -345,19 +358,27 @@
     <div class="space-y-4">
       {#if applicants.length > 0}
         {#each applicants as applicant}
-          <StartupCard 
-            startup={applicant} 
-            {selectedTab} 
+          <StartupCard
+            startup={applicant}
+            {selectedTab}
             onOpenStartupDialog={() => {
               openStartupDialog(applicant);
             }}
           />
         {/each}
       {:else}
-        <div class="flex items-center justify-center h-32 text-gray-500">
+        <div class="flex h-32 items-center justify-center text-gray-500">
           <div class="text-center">
             <p class="text-lg font-medium">No applications found</p>
-            <p class="text-sm">There are no {selectedTab === 'pending' ? 'pending applications' : selectedTab === 'waitlisted' ? 'waitlisted applications' : selectedTab === 'qualified' ? 'qualified startups' : 'completed applications'} at the moment.</p>
+            <p class="text-sm">
+              There are no {selectedTab === 'pending'
+                ? 'pending applications'
+                : selectedTab === 'waitlisted'
+                  ? 'waitlisted applications'
+                  : selectedTab === 'qualified'
+                    ? 'qualified startups'
+                    : 'completed applications'} at the moment.
+            </p>
           </div>
         </div>
       {/if}
@@ -377,7 +398,7 @@
 
   <!-- Dialog components -->
   {#if selectedTab === 'pending'}
-    <PendingDialog 
+    <PendingDialog
       startup={selectedStartup}
       {showDialog}
       {toggleDialog}
@@ -386,6 +407,7 @@
       assessments={assessments || []}
       {approveStartup}
       {assignAssessmentsToStartup}
+      {access}
     />
   {:else if selectedTab === 'waitlisted'}
     <WaitlistedDialog
@@ -396,9 +418,10 @@
       assessments={assessments || []}
       {approveStartup}
       {assignAssessmentsToStartup}
+      {access}
     />
   {:else if selectedTab === 'qualified'}
-    <QualifiedDialog  
+    <QualifiedDialog
       startup={selectedStartup}
       {showDialog}
       {toggleDialog}
@@ -409,6 +432,7 @@
       {startupAssessments}
       {assignAssessmentsToStartup}
       refetchStartupAssessments={fetchStartupAssessments}
+      {access}
     />
   {:else if selectedTab === 'completed'}
     <CompletedDialog

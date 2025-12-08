@@ -9,7 +9,11 @@ import {
   UseGuards,
   Patch,
 } from '@nestjs/common';
-import { CalculatorQuestionAnswerDto, UratQuestionAnswerDto } from './dto';
+import {
+  CalculatorQuestionAnswerDto,
+  UratQuestionAnswerDto,
+  RateReadinessDto,
+} from './dto';
 import { ReadinesslevelService } from './readinesslevel.service';
 import { JwtGuard } from 'src/auth/guard';
 
@@ -84,6 +88,18 @@ export class ReadinesslevelController {
   ) {
     return await this.readinessLevelService.updateCalculatorQuestionAnswer(
       id,
+      dto,
+    );
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('startup/:startupId/rate')
+  async rateStartupReadinessLevel(
+    @Param('startupId', ParseIntPipe) startupId: number,
+    @Body() dto: RateReadinessDto,
+  ) {
+    return await this.readinessLevelService.rateStartupReadinessLevel(
+      startupId,
       dto,
     );
   }

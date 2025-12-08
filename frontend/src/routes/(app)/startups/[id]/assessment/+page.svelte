@@ -28,34 +28,37 @@
     const { assessmentName, startupId, formData } = event.detail;
 
     try {
-      const assessmentType = $assessmentQuery.data?.find(
-        (a: Assessment) => a.name === assessmentName
+      const assessmentData = $assessmentQuery.data?.find(
+        (a: any) => a.assessment.name === assessmentName
       );
 
-      if (!assessmentType) {
+      if (!assessmentData) {
         throw new Error('Assessment type not found');
       }
 
-      // Map formData to responses array
-      const responses = assessmentType.assessmentFields.map((field: any) => ({
-        assessmentId: field.id,
+      // Map formData to responses array using fields from the new structure
+      const responses = assessmentData.fields.map((field: any) => ({
+        assessmentFieldId: field.id,
         answerValue: formData[field.id] || ''
       }));
 
-      const payload = {
-        startupId: parseInt(startupId, 10),
-        assessmentName,
-        responses
-      };
-
-      await axiosInstance.post('/assessments/submit', payload, {
-        headers: {
-          Authorization: `Bearer ${access}`
+      await axiosInstance.post(
+        `/startups/${startupId}/responses`,
+        {
+          responses
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${access}`
+          }
         }
-      });
+      );
+
+      toast.success('Assessment submitted successfully');
 
       // Refetch assessments to update the form with latest data
       await $assessmentQuery.refetch();
+      toggleAssessmentForm();
     } catch (error: any) {
       console.error('=== SUBMISSION ERROR ===');
       console.error('Error submitting assessment:', error);
@@ -91,19 +94,38 @@
     }
   });
 
-  let selectedAssessment = $state<Assessment | null>(null);
+  let selectedAssessment = $state<any | null>(null);
 
-  function openAssessment(assessment: Assessment): void {
-    selectedAssessment = assessment;
+  function openAssessment(assessmentData: any): void {
+    const transformedAssessment = {
+      id: assessmentData.assessment.id,
+      assessmentType: assessmentData.assessment.assessmentType,
+      name: assessmentData.assessment.name,
+      assessmentStatus: assessmentData.status,
+      assessmentFields: assessmentData.fields.map((field: any) => ({
+        id: field.id.toString(),
+        description: field.description,
+        type:
+          field.answerType === 'ShortAnswer'
+            ? 'ShortAnswer'
+            : field.answerType === 'LongAnswer'
+              ? 'LongAnswer'
+              : field.answerType === 'File'
+                ? 'File'
+                : 'ShortAnswer',
+        answer: field.answer?.answerValue || '',
+        fileUrl: field.answer?.fileUrl || '',
+        fileName: field.answer?.fileName || ''
+      }))
+    };
+    selectedAssessment = transformedAssessment;
     toggleAssessmentForm();
   }
 
   // Filter assessments based on role
   const displayedAssessments = $derived(() =>
     data.role === 'Mentor'
-      ? $assessmentQuery.data?.filter(
-          (a: Assessment) => a.assessmentStatus === 'Completed'
-        )
+      ? $assessmentQuery.data?.filter((a: any) => a.status === 'Completed')
       : $assessmentQuery.data
   );
 </script>
@@ -132,11 +154,12 @@
   {/if}
   <h2 class="mt-6 text-xl font-bold">Required Assessments</h2>
 
-  {#each $assessmentQuery.data as assessment}
+  {#each $assessmentQuery.data as assessmentData}
     <ReadinessAssessmentCard
-      name={assessment.name}
-      assessmentStatus={assessment.assessmentStatus}
-      buttonProps={{ onclick: () => openAssessment(assessment) }}
+      name={assessmentData.assessment.name}
+      assessmentStatus={assessmentData.status}
+      assessmentType={assessmentData.assessment.assessmentType}
+      buttonProps={{ onclick: () => openAssessment(assessmentData) }}
       isReadOnly={data.role === 'Mentor'}
     />
   {/each}

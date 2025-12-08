@@ -3,7 +3,6 @@
   import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
   import { getData } from '$lib/utils';
   import { useQuery } from '@sveltestack/svelte-query';
-  import { QualificationStatus } from '$lib/enums/qualification-status.enum.js';
 
   const { children, data } = $props();
   const { access, startupId } = data;
@@ -14,8 +13,6 @@
 
   const info: any = $derived($startupQuery.isSuccess ? $startupQuery.data : {});
 
-
-
   type m =
     | 'readiness-level'
     | 'progress-report'
@@ -24,17 +21,19 @@
     | 'initiatives'
     | 'roadblocks';
 
-  const getModule = (module: m) => {
-    const modules = {
+  const getModule = (segment: string): string => {
+    const modules: Record<string, string> = {
       'readiness-level': 'Readiness Level',
       'progress-report': 'Progress Report',
       rns: 'Recommended Next Steps',
       rna: 'Readiness and Needs Assessment',
       initiatives: 'Initiatives',
-      roadblocks: 'Roadblocks'
+      roadblocks: 'Roadblocks',
+      assessment: 'Assessments',
+      pending: 'Pending Approval',
+      overview: 'Overview'
     };
-
-    return modules[module];
+    return modules[segment] || segment;
   };
 </script>
 
@@ -53,10 +52,12 @@
       <Breadcrumb.Separator />
       <Breadcrumb.Item>
         <Breadcrumb.Page>
-          {info.qualificationStatus === QualificationStatus.QUALIFIED
+          {@const currentPath = $page.url.pathname.split('/').slice(-1)[0]}
+          {currentPath === 'assessment'
             ? 'Assessments'
-            : getModule($page.url.pathname.split('/').slice(-1)[0] as m) ||
-              'Pending Approval'}
+            : currentPath === 'pending'
+              ? 'Pending Approval'
+              : getModule(currentPath as m) || 'Overview'}
         </Breadcrumb.Page>
       </Breadcrumb.Item>
     </Breadcrumb.List>

@@ -25,6 +25,7 @@ import {
   WaitlistStartupDto,
   AppointMentorsDto,
   ChangeMentorDto,
+  UpdateCapsuleProposalDto,
 } from './dto';
 import { AiService } from '../ai/ai.service';
 import { CreateStartupDto } from '../admin/dto/create-startup.dto';
@@ -46,7 +47,9 @@ export class StartupService {
       case Role.Startup:
         return await this.em.find(
           Startup,
-          { user: userId },
+          {
+            $or: [{ user: userId }, { members: { id: userId } }],
+          },
           {
             populate: [
               'user',
@@ -95,18 +98,6 @@ export class StartupService {
       },
     );
 
-    t.forEach((startup, index) => {
-      console.log(`Startup ${index} (ID: ${startup.id}):`);
-      if (startup.capsuleProposal) {
-        console.log(
-          '  capsuleProposal.members:',
-          startup.capsuleProposal.members,
-        );
-      } else {
-        console.log('  No capsuleProposal found');
-      }
-    });
-
     return t;
   }
 
@@ -146,6 +137,11 @@ export class StartupService {
       });
 
       await this.em.persistAndFlush(startup);
+
+      // Add the startup leader/owner to the members collection
+      startup.members.add(user);
+      await this.em.flush();
+
       await this.createStartupProposal(startup, dto);
 
       return startup;
@@ -166,11 +162,23 @@ export class StartupService {
         proposal.problemStatement = dto.problemStatement;
         proposal.targetMarket = dto.targetMarket;
         proposal.solutionDescription = dto.solutionDescription;
-        proposal.objectives = dto.objectives ?? [];
-        proposal.historicalTimeline = dto.historicalTimeline ?? [];
-        proposal.competitiveAdvantageAnalysis =
-          dto.competitiveAdvantageAnalysis ?? [];
-        proposal.members = dto.members ?? [];
+
+        proposal.objectives = Array.isArray(dto.objectives)
+          ? dto.objectives
+          : [];
+
+        proposal.historicalTimeline = Array.isArray(dto.historicalTimeline)
+          ? dto.historicalTimeline
+          : [];
+
+        proposal.competitiveAdvantageAnalysis = Array.isArray(
+          dto.competitiveAdvantageAnalysis,
+        )
+          ? dto.competitiveAdvantageAnalysis
+          : [];
+
+        proposal.members = Array.isArray(dto.members) ? dto.members : [];
+
         proposal.intellectualPropertyStatus = dto.intellectualPropertyStatus;
         proposal.scope = dto.proposalScope;
         proposal.methodology = dto.methodology;
@@ -187,10 +195,25 @@ export class StartupService {
         problemStatement: dto.problemStatement,
         targetMarket: dto.targetMarket,
         solutionDescription: dto.solutionDescription,
-        objectives: dto.objectives ?? [],
-        historicalTimeline: dto.historicalTimeline ?? [],
-        competitiveAdvantageAnalysis: dto.competitiveAdvantageAnalysis ?? [],
-        members: dto.members ?? [],
+
+        // Ensure objectives is always an array
+        objectives: Array.isArray(dto.objectives) ? dto.objectives : [],
+
+        // Ensure historicalTimeline is always an array
+        historicalTimeline: Array.isArray(dto.historicalTimeline)
+          ? dto.historicalTimeline
+          : [],
+
+        // Ensure competitiveAdvantageAnalysis is always an array of objects
+        competitiveAdvantageAnalysis: Array.isArray(
+          dto.competitiveAdvantageAnalysis,
+        )
+          ? dto.competitiveAdvantageAnalysis
+          : [],
+
+        // Ensure members is always an array of objects
+        members: Array.isArray(dto.members) ? dto.members : [],
+
         intellectualPropertyStatus: dto.intellectualPropertyStatus,
         scope: dto.proposalScope,
         methodology: dto.methodology,
@@ -343,25 +366,34 @@ export class StartupService {
   }
 
   async addMemberToStartup(dto: any) {
-    // const startup = await this.em.findOne(Startup, { id: dto.startupId });
-    // if (!startup) {
-    //   throw new NotFoundException(
-    //     `Startup with ID ${dto.startupId} does not exist.`,
-    //   );
-    // }
-    //
-    // const user = await this.em.findOne(User, { id: dto.userId });
-    // if (!user) {
-    //   throw new NotFoundException(
-    //     `User with ID ${dto.startupId} does not exist.`,
-    //   );
-    // }
-    //
-    // startup.members.add(user);
-    // await this.em.flush();
-    // return {
-    //   message: `User with ID ${dto.userId} has been added to Startup ID ${dto.startupId}.`,
-    // };
+    const startup = await this.em.findOne(
+      Startup,
+      { id: dto.startupId },
+      { populate: ['members'] },
+    );
+
+    if (!startup) {
+      throw new NotFoundException(
+        `Startup with ID ${dto.startupId} does not exist.`,
+      );
+    }
+    const user = await this.em.findOne(User, { id: dto.userId });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${dto.userId} does not exist.`);
+    }
+
+    if (startup.members.contains(user)) {
+      throw new BadRequestException(
+        `User is already a member of this startup.`,
+      );
+    }
+    startup.members.add(user);
+    await this.em.flush();
+
+    return {
+      message: `User with ID ${dto.userId} has been added to Startup ID ${dto.startupId}.`,
+    };
   }
 
   async getPendingStartupsRankingByUrat() {
@@ -989,6 +1021,10 @@ export class StartupService {
 
     try {
       await this.em.persistAndFlush(startup);
+
+      // Add the startup leader/owner to the members collection
+      startup.members.add(user);
+      await this.em.flush();
     } catch (e: any) {
       // Handle out-of-sync sequence: duplicate key on startups_pkey
       const msg = String(e?.message ?? '');
@@ -1001,6 +1037,10 @@ export class StartupService {
           );
         // Retry once
         await this.em.persistAndFlush(startup);
+
+        // Add the startup leader/owner to the members collection
+        startup.members.add(user);
+        await this.em.flush();
       } else {
         throw e;
       }
@@ -1052,5 +1092,51 @@ export class StartupService {
     await this.em.flush();
 
     return startup;
+  }
+
+  async updateCapsuleProposalFields(
+    startupId: number,
+    dto: UpdateCapsuleProposalDto,
+  ): Promise<CapsuleProposal> {
+    const startup = await this.em.findOne(
+      Startup,
+      { id: startupId },
+      { populate: ['capsuleProposal'] },
+    );
+
+    if (!startup) {
+      console.error(`Startup with ID ${startupId} not found`);
+      throw new NotFoundException(`Startup with ID ${startupId} not found`);
+    }
+
+    if (!startup.capsuleProposal) {
+      console.error(`Startup with ID ${startupId} has no capsule proposal`);
+      throw new BadRequestException(
+        `Startup with ID ${startupId} has no capsule proposal to update`,
+      );
+    }
+
+    const proposal = startup.capsuleProposal;
+
+    // Update only the fields that are provided
+    if (dto.title !== undefined) proposal.title = dto.title;
+    if (dto.description !== undefined) proposal.description = dto.description;
+    if (dto.problemStatement !== undefined)
+      proposal.problemStatement = dto.problemStatement;
+    if (dto.targetMarket !== undefined)
+      proposal.targetMarket = dto.targetMarket;
+    if (dto.solution !== undefined) proposal.solutionDescription = dto.solution;
+    if (dto.objectives !== undefined) {
+      // Split objectives by newlines and filter out empty lines
+      proposal.objectives = dto.objectives
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+    }
+    if (dto.scope !== undefined) proposal.scope = dto.scope;
+    if (dto.methodology !== undefined) proposal.methodology = dto.methodology;
+
+    await this.em.flush();
+    return proposal;
   }
 }

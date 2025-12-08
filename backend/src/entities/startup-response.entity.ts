@@ -1,20 +1,26 @@
-import { Entity, PrimaryKey, Property, ManyToOne } from "@mikro-orm/core";
-import { Assessment } from "./assessment.entity";
+import { Entity, PrimaryKey, Property, ManyToOne } from '@mikro-orm/core';
+import { Startup } from './startup.entity';
+import { AssessmentField } from './assessment-field.entity';
 
-@Entity({ tableName: "startup_responses" })
+@Entity({ tableName: 'startup_responses' })
 export class StartupResponse {
   @PrimaryKey({ autoincrement: true })
   id!: number;
 
-  @Property()
-  startupId!: number; // FK → Startup table
+  @ManyToOne(() => Startup, { deleteRule: 'cascade' })
+  startup!: Startup;
 
-  @ManyToOne(() => Assessment, { deleteRule: 'cascade' })
-  assessment!: Assessment; // the specific question answered
+  @ManyToOne(() => AssessmentField, { deleteRule: 'cascade' })
+  assessmentField!: AssessmentField;
 
+  // For text answers (ShortAnswer, LongAnswer)
   @Property({ nullable: true, type: 'text' })
-  answerValue?: string; // text, file URL, or JSON array of files
+  answerValue?: string;
 
-  @Property()
-  submittedAt?: Date = new Date();
+  // For file uploads
+  @Property({ nullable: true })
+  fileUrl?: string;
+
+  @Property({ nullable: true })
+  fileName?: string;
 }

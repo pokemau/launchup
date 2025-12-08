@@ -1,30 +1,20 @@
 <script lang="ts">
   import {
-    // AIColumn,
-    // AITabs,
-    Can,
-    Column,
-    KanbanBoard,
     KanbanBoardNew,
     MembersFilter,
     ShowHideColumns
   } from '$lib/components/shared';
   import {
     getData,
-    getColumns,
-    getSavedTab,
-    getSelectedTab,
-    updateTab
+    getColumns
     // getReadiness
   } from '$lib/utils';
   import { useQueriesState } from '$lib/stores/useQueriesState.svelte.js';
   import { useQueries } from '@sveltestack/svelte-query';
-  import * as Card from '$lib/components/ui/card';
   import { page } from '$app/stores';
   import axiosInstance from '$lib/axios.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { toast } from 'svelte-sonner';
-  import { Badge } from '$lib/components/ui/badge/index.js';
   import { RoadblocksCard } from '$lib/components/startups/roadblocks';
   import { RoadblocksCreateDialog } from '$lib/components/startups/roadblocks';
   import { Skeleton } from '$lib/components/ui/skeleton/index.js';
@@ -41,6 +31,8 @@
   import * as Tabs from '$lib/components/ui/tabs/index.js';
   import * as Table from '$lib/components/ui/table';
   import { Button } from '$lib/components/ui/button';
+
+  let dropdownOpen = $state(false);
 
   interface Member {
     userId: number;
@@ -72,16 +64,17 @@
         getData(`/startups/${startupId}/allow-roadblocks/`, access!)
     },
     {
-      queryKey: ['roadblocksData'],
+      queryKey: ['roadblocksData', startupId],
       queryFn: () => getData(`/roadblocks/?startupId=${startupId}`, access!)
     },
     {
-      queryKey: ['startupData'],
+      queryKey: ['startupData', startupId],
       queryFn: () => getData(`/startups/${startupId}`, access!)
     }
   ]);
 
   const { isLoading, isError } = $derived(useQueriesState($roadblocksQueries));
+  $roadblocksQueries[0].refetch();
   const isAccessible = $derived($roadblocksQueries[0].data);
 
   const columns = $state(getColumns());
@@ -481,8 +474,7 @@
 {:else if isAccessible}
   {@render accessible()}
 {:else}
-  {@render loading()}
-  <!-- {@render fallback()} -->
+  {@render fallback()}
 {/if}
 
 <RoadblocksCreateDialog
@@ -604,7 +596,7 @@
               <Sparkles class="h-4 w-4" />Generate
             {/if}
           </Button>
-          <DropdownMenu.Root>
+          <DropdownMenu.Root bind:open={dropdownOpen}>
             <DropdownMenu.Trigger>
               <Button
                 class="border-primary/20 hover:bg-primary/90 rounded-bl-none rounded-tl-none border-l bg-primary px-2 py-2 text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -688,5 +680,13 @@
 {/snippet}
 
 {#snippet fallback()}
-  <div>fallback</div>
+  <div class="text-2xl font-bold mt-10 text-center">
+    {#if data.role === 'Startup'}
+      Your mentor has not yet created Readiness and Needs Assessments.
+    {:else if data.role === 'Mentor'}
+      Please create Readiness and Needs Assessments for your startup.
+    {:else}
+      Something went wrong...
+    {/if}
+  </div>
 {/snippet}

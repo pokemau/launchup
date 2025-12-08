@@ -9,6 +9,7 @@ import { StartupApplicationDto } from 'src/startup/dto/startup.dto';
 @Injectable()
 export class AiService {
   private readonly ai: GoogleGenAI;
+  private readonly modelName = 'gemini-2.5-flash';
 
   constructor(private config: ConfigService) {
     this.ai = new GoogleGenAI({
@@ -18,7 +19,7 @@ export class AiService {
 
   async test() {
     const res = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: 'what is the lyrics for bloom necry talkie',
     });
     return res.text;
@@ -26,7 +27,7 @@ export class AiService {
 
   async getCapsuleProposalInfo(text: string) {
     const res = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: `Based on the text ${text},
         Task: extract the text for:
         -Acceleration Proposal Title ( can be found above the Duration: 3 months, etc.)
@@ -50,7 +51,7 @@ export class AiService {
     dto: StartupApplicationDto,
   ): Promise<string> {
     const res = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: `Please provide a comprehensive analysis of the following startup proposal:
       
       Title: ${dto.title}
@@ -98,7 +99,7 @@ export class AiService {
     prompt: string,
   ): Promise<{ readiness_level_type: string; rna: string }[]> {
     const res = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: prompt,
     });
 
@@ -127,7 +128,7 @@ export class AiService {
     prompt: string,
   ): Promise<{ target_level: number; description: string }[]> {
     const res = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: prompt,
     });
 
@@ -161,7 +162,7 @@ export class AiService {
     }[]
   > {
     const res = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: prompt,
     });
 
@@ -192,7 +193,7 @@ export class AiService {
     prompt: string,
   ): Promise<{ refinedDescription: string; aiCommentary: string }> {
     const res = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: prompt,
     });
 
@@ -216,7 +217,7 @@ export class AiService {
     prompt: string,
   ): Promise<{ description: string; fix: string; riskNumber: number }[]> {
     const res = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: prompt,
     });
     const text = res.text;
@@ -258,12 +259,12 @@ export class AiService {
       },
     );
 
-    const trl = startupReadinessLevels[0].readinessLevel.level;
-    const mrl = startupReadinessLevels[1].readinessLevel.level;
-    const arl = startupReadinessLevels[2].readinessLevel.level;
-    const orl = startupReadinessLevels[3].readinessLevel.level;
-    const rrl = startupReadinessLevels[4].readinessLevel.level;
-    const irl = startupReadinessLevels[5].readinessLevel.level;
+    const trl = startupReadinessLevels[0]?.readinessLevel.level || 0;
+    const mrl = startupReadinessLevels[1]?.readinessLevel.level || 0;
+    const arl = startupReadinessLevels[2]?.readinessLevel.level || 0;
+    const orl = startupReadinessLevels[3]?.readinessLevel.level || 0;
+    const rrl = startupReadinessLevels[4]?.readinessLevel.level || 0;
+    const irl = startupReadinessLevels[5]?.readinessLevel.level || 0;
 
     return `
       Given these data:
@@ -303,7 +304,7 @@ export class AiService {
     aiCommentary: string;
   }> {
     const response = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: prompt,
     });
 
@@ -346,7 +347,7 @@ export class AiService {
     aiCommentary: string;
   }> {
     const response = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: prompt,
     });
 
@@ -384,7 +385,7 @@ export class AiService {
     aiCommentary: string;
   }> {
     const response = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: this.modelName,
       contents: prompt,
     });
 

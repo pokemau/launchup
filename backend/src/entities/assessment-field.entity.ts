@@ -1,8 +1,35 @@
-// NOTE: Disabled duplicate entity mapping to 'assessments' table; using `Assessment` entity instead.
-// Previously:
-// @Entity({ tableName: 'assessments' })
-// export class AssessmentField { ... }
+import {
+  Entity,
+  PrimaryKey,
+  Property,
+  ManyToOne,
+  OneToMany,
+  Collection,
+  Enum,
+} from '@mikro-orm/core';
+import { AssessmentAnswerType } from './enums/assessment-util.enum';
+import { Assessment } from './assessment.entity';
+import { StartupResponse } from './startup-response.entity';
 
+@Entity({ tableName: 'assessment_fields' })
 export class AssessmentField {
-  // ...original properties (unused). Keeping for reference only.
+  @PrimaryKey({ autoincrement: true })
+  id!: number;
+
+  @ManyToOne(() => Assessment, { deleteRule: 'cascade' })
+  assessment!: Assessment;
+
+  @Property({ type: 'text' })
+  description!: string;
+
+  @Enum(() => AssessmentAnswerType)
+  answerType!: AssessmentAnswerType;
+
+  @OneToMany(
+    () => StartupResponse,
+    (r) => {
+      return r.assessmentField;
+    },
+  )
+  responses = new Collection<StartupResponse>(this);
 }

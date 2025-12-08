@@ -17,9 +17,9 @@ import { CreateStartupDto } from './dto/create-startup.dto';
 import { UpdateStartupDto } from './dto/update-startup.dto';
 import { EntityManager } from '@mikro-orm/core';
 import { ActivityLog } from '../entities/activity-log.entity';
-import { JwtGuard, ManagerGuard } from '../auth/guard';
+import { JwtGuard, AdminGuard } from '../auth/guard';
 
-@UseGuards(JwtGuard, ManagerGuard)
+@UseGuards(JwtGuard, AdminGuard)
 @Controller('admin')
 export class AdminController {
   constructor(

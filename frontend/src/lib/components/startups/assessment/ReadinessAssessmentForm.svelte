@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import * as Dialog from '$lib/components/ui/dialog';
+  import * as Select from '$lib/components/ui/select';
   import ShortAnswerField from './AssessmentTypes/ShortAnswerField.svelte';
   import LongAnswerField from './AssessmentTypes/LongAnswerField.svelte';
   import FileUploadField from './AssessmentTypes/FileUploadField.svelte';
@@ -29,6 +30,8 @@
   let isInitialized = false;
   let isChangingStatus = false;
   let fileUploadComponents: Record<string, FileUploadField> = {};
+  let readinessLevel = '1';
+  let isLoadingReadinessLevel = false;
 
   $: {
     if (!isInitialized && assessment?.assessmentFields) {
@@ -36,6 +39,39 @@
         formData[field.id] = field.answer || '';
       });
       isInitialized = true;
+    }
+  }
+
+  // Fetch current readiness level when component loads (for mentor view)
+  $: if (isMentor && assessment?.assessmentType && startupId) {
+    fetchCurrentReadinessLevel();
+  }
+
+  async function fetchCurrentReadinessLevel() {
+    if (isLoadingReadinessLevel) return; // Prevent duplicate calls
+    
+    try {
+      isLoadingReadinessLevel = true;
+      const response = await axiosInstance.get(
+        `/readinesslevel/readiness-level?startupId=${startupId}`,
+        {
+          headers: { Authorization: `Bearer ${access}` }
+        }
+      );
+
+      // Find the readiness level for this assessment's type
+      const currentLevel = response.data.find(
+        (rl: any) => rl.readinessLevel.readinessType === assessment.assessmentType
+      );
+
+      if (currentLevel) {
+        readinessLevel = currentLevel.readinessLevel.level.toString();
+      }
+    } catch (error) {
+      console.error('Error fetching current readiness level:', error);
+      // Keep default value of '1' if fetch fails
+    } finally {
+      isLoadingReadinessLevel = false;
     }
   }
 
@@ -51,7 +87,6 @@
 
     try {
       isSubmitting = true;
-      console.log('Starting submission');
 
       // Upload all pending files
       const fileUploadPromises = Object.entries(fileUploadComponents).map(
@@ -91,34 +126,28 @@
     }
   }
 
-  async function handleStatusChange(
-    newStatus: 'complete' | 'pending'
-  ): Promise<void> {
+  async function rateAssessment(): Promise<void> {
     try {
       isChangingStatus = true;
-
-      const endpoint = `/assessments/startup/${startupId}/assessment/${encodeURIComponent(assessment.name)}/${newStatus}`;
-
-      await axiosInstance.patch(
-        endpoint,
-        {},
+      await axiosInstance.post(
+        `/readinesslevel/startup/${startupId}/rate`,
         {
-          headers: {
-            Authorization: `Bearer ${access}`
-          }
+          readinessType: assessment.assessmentType,
+          level: Number(readinessLevel)
+        },
+        {
+          headers: { Authorization: `Bearer ${access}` }
         }
       );
 
       toast.success(
-        `Assessment marked as ${newStatus === 'complete' ? 'completed' : 'pending'}`
+        `${assessment.assessmentType} readiness level set to ${readinessLevel}`
       );
       dispatch('statusChanged');
       dispatch('close');
     } catch (error) {
-      console.error('Error changing assessment status:', error);
-      toast.error(
-        `Failed to mark assessment as ${newStatus === 'complete' ? 'completed' : 'pending'}`
-      );
+      console.error('Error rating assessment:', error);
+      toast.error('Failed to rate assessment');
     } finally {
       isChangingStatus = false;
     }
@@ -173,23 +202,25 @@
     <Button variant="outline" onclick={() => dispatch('close')}>Close</Button>
 
     {#if isMentor}
-      {#if assessment.assessmentStatus === 'Completed'}
-        <Button
-          variant="destructive"
-          disabled={isChangingStatus}
-          onclick={() => handleStatusChange('pending')}
-        >
-          {isChangingStatus ? 'Updating...' : 'Mark as Pending'}
-        </Button>
-      {:else if assessment.assessmentStatus === 'Pending'}
+      <div class="flex items-center gap-3">
+        <Select.Root type="single" bind:value={readinessLevel}>
+          <Select.Trigger class="w-[180px]">
+            Level {readinessLevel}
+          </Select.Trigger>
+          <Select.Content>
+            {#each Array.from( { length: 9 }, (_, i) => (i + 1).toString() ) as level}
+              <Select.Item value={level}>Level {level}</Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
         <Button
           variant="default"
           disabled={isChangingStatus}
-          onclick={() => handleStatusChange('complete')}
+          onclick={rateAssessment}
         >
-          {isChangingStatus ? 'Updating...' : 'Mark as Completed'}
+          {isChangingStatus ? 'Rating...' : 'Rate'}
         </Button>
-      {/if}
+      </div>
     {:else}
       <Button
         variant="default"

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Skeleton } from '$lib/components/ui/skeleton';
   import Button from '$lib/components/ui/button/button.svelte';
-  import { RocketIcon } from 'lucide-svelte';
+  import { RocketIcon, TargetIcon, CheckCircleIcon } from 'lucide-svelte';
   import { StartupCard } from '$lib/components/startups';
   import StartupStatusCard from '$lib/components/startups/base/StartupStatusCard.svelte';
   import StartupFilterButton from '$lib/components/startups/base/StartupFilterButton.svelte';
@@ -219,85 +219,114 @@
 </div>
 
 <!-- Statistics Cards -->
-<div class="mb-8 grid grid-cols-3 gap-5">
+<div class="mb-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
   <div
-    class="flex flex-col gap-1 rounded-lg border border-border bg-background p-5"
+    class="group flex flex-col gap-1 rounded-xl border border-border bg-gradient-to-br from-background to-background/50 p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/50"
   >
-    <span class="text-2xl font-bold">{listOfStartups().length}</span>
-    <span class="mb-2 text-sm">Total Startups</span>
-    <div class="mt-2 flex flex-wrap justify-start gap-3">
-      {#if role === 'Startup'}
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-sm font-medium text-muted-foreground">Total Startups</span>
+      <RocketIcon class="h-5 w-5 text-primary opacity-60" />
+    </div>
+    <span class="text-4xl font-bold tracking-tight">{listOfStartups().length}</span>
+
+    <div class="mt-4 pt-4 border-t border-border/50">
+      <p class="text-xs text-muted-foreground mb-3 font-medium">Status Breakdown</p>
+      <div class="gap-2 flex flex-wrap">
+        {#if role === 'Startup'}
+          <StartupStatusCard
+            count={pendingStartups.length}
+            label="Pending"
+            borderColor="border-yellow-500"
+            bgColor="bg-yellow-50 dark:bg-yellow-950"
+            textColor="text-yellow-700 dark:text-yellow-300"
+          />
+          <StartupStatusCard
+            count={waitlistedStartups.length}
+            label="Waitlisted"
+            borderColor="border-orange-500"
+            bgColor="bg-orange-50 dark:bg-orange-950"
+            textColor="text-orange-700 dark:text-orange-300"
+          />
+          <StartupStatusCard
+            count={qualifiedStartups.length}
+            label="Qualified"
+            borderColor="border-green-500"
+            bgColor="bg-green-50 dark:bg-green-950"
+            textColor="text-green-700 dark:text-green-300"
+          />
+        {:else if role === 'Mentor'}
+          <StartupStatusCard
+            count={qualifiedStartups.length}
+            label="Active"
+            borderColor="border-blue-500"
+            bgColor="bg-blue-50 dark:bg-blue-950"
+            textColor="text-blue-700 dark:text-blue-300"
+          />
+        {/if}
         <StartupStatusCard
-          count={pendingStartups.length}
-          label="Pending"
-          borderColor="border-secondary"
-          bgColor="bg-secondary"
+          count={completedStartups.length}
+          label="Completed"
+          borderColor="border-purple-500"
+          bgColor="bg-purple-50 dark:bg-purple-950"
+          textColor="text-purple-700 dark:text-purple-300"
         />
-        <StartupStatusCard
-          count={waitlistedStartups.length}
-          label="Waitlisted"
-          borderColor="border-accent"
-          bgColor="bg-accent"
-        />
-        <StartupStatusCard
-          count={qualifiedStartups.length}
-          label="Qualified"
-          borderColor="border-primary"
-          bgColor="bg-card"
-        />
-      {:else if role === 'Mentor'}
-        <StartupStatusCard
-          count={qualifiedStartups.length}
-          label="Active"
-          borderColor="border-primary"
-          bgColor="bg-card"
-        />
-      {/if}
-      <StartupStatusCard
-        count={completedStartups.length}
-        label="Completed"
-        borderColor="border-primary"
-        bgColor="bg-card"
-      />
+      </div>
     </div>
   </div>
 
   <div
-    class="flex flex-col gap-2 rounded-lg border border-border bg-background p-5"
+    class="group flex flex-col gap-3 rounded-xl border border-border bg-gradient-to-br from-background to-background/50 p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/50"
   >
-    <div class="text-sm">Initiatives Progress</div>
-    <div class="flex items-center gap-2">
-      <span class="text-2xl font-bold"
+    <div class="flex items-center justify-between">
+      <span class="text-sm font-medium text-muted-foreground">Initiatives Progress</span>
+      <TargetIcon class="h-5 w-5 text-primary opacity-60" />
+    </div>
+
+    <div class="flex items-baseline gap-2">
+      <span class="text-4xl font-bold tracking-tight"
         >{allInitiatives?.filter((initiative) => initiative?.status === 4)
-          ?.length || 0} / {allInitiatives?.length ?? 0}</span
+          ?.length || 0}</span
       >
-      <span class="ml-auto text-sm"
-        >{completedInitiativesPercentage.toFixed(0)}%</span
-      >
+      <span class="text-xl text-muted-foreground">/ {allInitiatives?.length ?? 0}</span>
     </div>
-    <div class="h-2 w-full rounded bg-accent">
-      <div
-        class="h-2 rounded bg-primary"
-        style="width:{completedInitiativesPercentage.toFixed(0)}%"
-      ></div>
+
+    <div class="space-y-2">
+      <div class="flex justify-between items-center">
+        <span class="text-xs text-muted-foreground">Completion</span>
+        <span class="text-sm font-semibold text-primary"
+          >{completedInitiativesPercentage.toFixed(0)}%</span
+        >
+      </div>
+      <div class="h-3 w-full rounded-full bg-muted overflow-hidden">
+        <div
+          class="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500 ease-out shadow-sm"
+          style="width:{completedInitiativesPercentage.toFixed(0)}%"
+        ></div>
+      </div>
     </div>
   </div>
 
   <div
-    class="flex flex-col gap-2 rounded-lg border border-border bg-background p-5"
+    class="group flex flex-col gap-3 rounded-xl border border-border bg-gradient-to-br from-background to-background/50 p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/50"
   >
-    <div class="text-sm">Completion Rate</div>
-    <div class="flex items-center gap-2">
-      <span class="text-2xl font-bold"
-        >{listOfStartups().length > 0
-          ? Math.round(
-              (completedStartups.length / listOfStartups().length) * 100
-            )
-          : 0}%</span
-      >
+    <div class="flex items-center justify-between">
+      <span class="text-sm font-medium text-muted-foreground">Completion Rate</span>
+      <CheckCircleIcon class="h-5 w-5 text-primary opacity-60" />
     </div>
-    <div class="text-sm">
-      {completedStartups.length} of {listOfStartups().length} startups completed
+
+    <span class="text-4xl font-bold tracking-tight"
+      >{listOfStartups().length > 0
+        ? Math.round(
+            (completedStartups.length / listOfStartups().length) * 100
+          )
+        : 0}%</span
+    >
+
+    <div class="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+      <span class="font-semibold text-foreground">{completedStartups.length}</span>
+      <span>of</span>
+      <span class="font-semibold text-foreground">{listOfStartups().length}</span>
+      <span>completed</span>
     </div>
   </div>
 </div>
@@ -363,23 +392,21 @@
 
 <!-- Startup Cards Grid -->
 {#if isLoading}
-  <div class="mt-3 grid grid-cols-4 gap-3 pb-10">
-    <div class="rounded-lg bg-background">
-      <Skeleton class="h-40 rounded-lg" />
-    </div>
-    <div class="rounded-lg bg-background">
-      <Skeleton class="h-40 rounded-lg" />
-    </div>
-    <div class="rounded-lg bg-background">
-      <Skeleton class="h-40 rounded-lg" />
-    </div>
+  <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-10">
+    {#each Array(8) as _, i}
+      <div class="animate-pulse">
+        <div class="rounded-xl bg-muted/50 border border-border">
+          <Skeleton class="h-48 rounded-xl" />
+        </div>
+      </div>
+    {/each}
   </div>
 {:else if isError}
   <div>
     <p>Error fetching data. Contact support</p>
   </div>
 {:else if hasStartups}
-  <div class="mt-3 grid grid-cols-4 gap-5 pb-10">
+  <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-10">
     {#each filteredStartups() as startup}
       <StartupCard
         {startup}
@@ -391,7 +418,22 @@
     {/each}
   </div>
 {:else}
-  <div class="mt-10 text-center text-3xl font-bold">No startups found...</div>
+  <div class="mt-20 text-center">
+    <div class="mx-auto w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mb-6">
+      <RocketIcon class="h-12 w-12 text-muted-foreground/50" />
+    </div>
+    <h3 class="text-2xl font-bold mb-2">No startups found</h3>
+    <p class="text-muted-foreground mb-6">
+      {search ? 'Try adjusting your search criteria' : 'Get started by adding your first startup'}
+    </p>
+    <Can role={['Startup']} userRole={role}>
+      <a href="/apply">
+        <Button class="gap-2">
+          <RocketIcon class="h-4 w-4" /> Apply Now
+        </Button>
+      </a>
+    </Can>
+  </div>
 {/if}
 
 <Dialog.Root open={showApplicationForm} onOpenChange={toggleApplicationForm}>

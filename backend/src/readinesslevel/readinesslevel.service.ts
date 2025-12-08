@@ -2,7 +2,11 @@ import { EntityManager } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import { CalculatorQuestion } from 'src/entities/calculator-question.entity';
 import { UratQuestion } from 'src/entities/urat-question.entity';
-import { CalculatorQuestionAnswerDto, UratQuestionAnswerDto } from './dto';
+import {
+  CalculatorQuestionAnswerDto,
+  UratQuestionAnswerDto,
+  RateReadinessDto,
+} from './dto';
 import { CalculatorQuestionAnswer } from 'src/entities/calculator-question-answer.entity';
 import { Startup } from 'src/entities/startup.entity';
 import { UratQuestionAnswer } from 'src/entities/urat-question-answer.entity';
@@ -192,5 +196,49 @@ export class ReadinesslevelService {
     }
     await this.em.flush();
     return answer;
+  }
+
+  async rateStartupReadinessLevel(
+    startupId: number,
+    dto: RateReadinessDto,
+  ): Promise<StartupReadinessLevel> {
+    const startup = await this.em.findOneOrFail(
+      Startup,
+      { id: startupId },
+      {
+        failHandler: () => new Error(`Startup with ID ${startupId} not found`),
+      },
+    );
+
+    const readinessLevel = await this.em.findOneOrFail(
+      ReadinessLevel,
+      {
+        readinessType: dto.readinessType,
+        level: dto.level,
+      },
+      {
+        failHandler: () =>
+          new Error(
+            `ReadinessLevel not found for type ${dto.readinessType} and level ${dto.level}`,
+          ),
+      },
+    );
+
+    let startupReadinessLevel = await this.em.findOne(StartupReadinessLevel, {
+      startup: startup,
+      readinessLevel: { readinessType: dto.readinessType },
+    });
+
+    if (!startupReadinessLevel) {
+      startupReadinessLevel = new StartupReadinessLevel();
+      startupReadinessLevel.startup = startup;
+      this.em.persist(startupReadinessLevel);
+    }
+
+    startupReadinessLevel.readinessLevel = readinessLevel;
+
+    await this.em.flush();
+
+    return startupReadinessLevel;
   }
 }

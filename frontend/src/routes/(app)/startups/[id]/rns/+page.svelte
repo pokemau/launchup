@@ -29,6 +29,8 @@
   import { goto } from '$app/navigation';
   import { Button } from '$lib/components/ui/button';
 
+  let dropdownOpen = $state(false);
+
   interface Member {
     userId: number;
     startupId: number;
@@ -47,7 +49,7 @@
       queryFn: () => getData(`/startups/${startupId}/allow-tasks/`, access!)
     },
     {
-      queryKey: ['rnsData'],
+      queryKey: ['rnsData', startupId],
       queryFn: () => getData(`/rns/?startupId=${startupId}`, access!)
     },
     {
@@ -55,17 +57,18 @@
       queryFn: () => getData(`/readinesslevel/readiness-levels/`, access!)
     },
     {
-      queryKey: ['startupData'],
+      queryKey: ['startupData', startupId],
       queryFn: () => getData(`/startups/${startupId}`, access!)
     },
     {
-      queryKey: ['rnaData'],
+      queryKey: ['rnaData', startupId],
       queryFn: () => getData(`/rna/?startupId=${startupId}`, access!)
     }
   ];
 
   const rnsQueries = useQueries(queryArray);
   const { isLoading, isError } = $derived(useQueriesState(queryArray));
+  $rnsQueries[0].refetch();
   const isAccessible = $derived($rnsQueries[0].data);
 
   const columns = $state(getColumns());
@@ -464,8 +467,7 @@
 {:else if isAccessible}
   {@render accessible()}
 {:else}
-  {@render loading()}
-  <!-- {@render fallback()} -->
+  {@render fallback()}
 {/if}
 
 <svelte:head>
@@ -599,7 +601,8 @@
               <Sparkles class="h-4 w-4" />Generate
             {/if}
           </Button>
-          <DropdownMenu.Root>
+
+          <DropdownMenu.Root bind:open={dropdownOpen}>
             <DropdownMenu.Trigger>
               <Button
                 class="border-primary/20 hover:bg-primary/90 rounded-bl-none rounded-tl-none border-l bg-primary px-2 py-2 text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -717,47 +720,13 @@
 {/snippet}
 
 {#snippet fallback()}
-  <!-- TODO: TEMP FIX RANI -->
-
-  <div class="flex h-full flex-col gap-3">
-    <div class="flex justify-between">
-      <div class="flex gap-3">
-        <div class="bg-background" class:hidden={data.role === 'Startup'}>
-          <Skeleton class="h-9 w-[126px]" />
-        </div>
-        <div class="bg-background">
-          <Skeleton class="h-9 w-[170px]" />
-        </div>
-        <div class="flex">
-          {#each [1, 2] as item, index}
-            <Skeleton
-              class={`flex h-9 w-9 items-center justify-center rounded-full border-2 border-background ${
-                index !== 2 - 1 ? '-mr-1' : ''
-              } `}
-            >
-              <span>?</span>
-            </Skeleton>
-          {/each}
-        </div>
-      </div>
-      <div class="ml-auto bg-background">
-        <Skeleton class="h-9 w-[90px]" />
-      </div>
-    </div>
-
-    <div class="grid h-full grid-cols-4 gap-5">
-      <div class="h-full w-full bg-background">
-        <Skeleton class="h-full" />
-      </div>
-      <div class="h-full w-full bg-background">
-        <Skeleton class="h-full" />
-      </div>
-      <div class="h-full w-full bg-background">
-        <Skeleton class="h-full" />
-      </div>
-      <div class="h-full w-full bg-background">
-        <Skeleton class="h-full" />
-      </div>
-    </div>
+  <div class="text-2xl font-bold mt-10 text-center">
+    {#if data.role === 'Startup'}
+      Your mentor has not yet created Readiness and Needs Assessments.
+    {:else if data.role === 'Mentor'}
+      Please create Readiness and Needs Assessments for your startup.
+    {:else}
+      Something went wrong...
+    {/if}
   </div>
 {/snippet}

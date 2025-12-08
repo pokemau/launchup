@@ -184,7 +184,13 @@
 </svelte:head>
 <div class="flex flex-col gap-5">
   <h1 class="text-xl font-semibold">Elevate</h1>
-  <div class="flex items-center justify-between">
+  {#if $readinessData.isError || $elevateData.isError || $queryResult.isError}
+    <div class="rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
+      <p class="font-medium">Failed to load elevation data</p>
+      <p class="text-sm">Please try refreshing the page</p>
+    </div>
+  {:else}
+    <div class="flex items-center justify-between">
     {#if $readinessData.isLoading}
       <Skeleton class="h-10" />
     {:else}
@@ -198,7 +204,6 @@
               {#if data.role !== 'Startup'}
                 <Table.Head class="">Next Level</Table.Head>
               {/if}
-              <!-- <Table.Head class="">Remarks</Table.Head> -->
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -243,7 +248,7 @@
                         </Select.Trigger>
                         <Select.Content>
                           {#each getReadinessLevels(r.readinessLevel.readinessType) as item}
-                            <Select.Item value={`${item.id}`}
+                            <Select.Item value={item.id}
                               >{item.level}</Select.Item
                             >
                           {/each}
@@ -251,31 +256,16 @@
                       </Select.Root>
                     </Table.Cell>
                   {/if}
-                  <!-- <Table.Cell> -->
-                  <!--   {#if data.role !== 'Startup'} -->
-                  <!--     {#if elevatedReadiness[index] === r.readiness_level_id} -->
-                  <!--       <Textarea rows={1} bind:value={r.remark} readonly /> -->
-                  <!--     {:else} -->
-                  <!--       <Textarea rows={1} bind:value={elevatedRemark[index]} /> -->
-                  <!--     {/if} -->
-                  <!--   {:else} -->
-                  <!--     <Textarea -->
-                  <!--       rows={1} -->
-                  <!--       class="border-none outline-none active:border-none active:outline-none" -->
-                  <!--       readonly -->
-                  <!--       value={r.remark} -->
-                  <!--     /> -->
-                  <!--   {/if} -->
-                  <!-- </Table.Cell> -->
                 </Table.Row>
               {/each}
             {/if}
           </Table.Body>
         </Table.Root>
       </div>
+      {/if}
+    </div>
+    {#if data.role !== 'Startup'}
+      <div><Button onclick={elevate}>Elevate</Button></div>
     {/if}
-  </div>
-  {#if data.role !== 'Startup'}
-    <div><Button onclick={elevate}>Elevate</Button></div>
   {/if}
 </div>

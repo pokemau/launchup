@@ -44,6 +44,9 @@
   import { ChevronDown } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
 
+
+  let dropdownOpen = $state(false);
+
   const { data } = $props();
   const { access, startupId } = data;
   const initiativesQueries = useQueries([
@@ -53,20 +56,21 @@
         getData(`/startups/${startupId}/allow-initiatives/`, access!)
     },
     {
-      queryKey: ['rnsDataInitiative'],
+      queryKey: ['rnsDataInitiative', startupId],
       queryFn: () => getData(`/rns?startupId=${startupId}`, access!)
     },
     {
-      queryKey: ['initiativesData'],
+      queryKey: ['initiativesData', startupId],
       queryFn: () => getData(`/initiatives/?startupId=${startupId}`, access!)
     },
     {
-      queryKey: ['startupData'],
+      queryKey: ['startupData', startupId],
       queryFn: () => getData(`/startups/${startupId}`, access!)
     }
   ]);
 
   const { isLoading, isError } = $derived(useQueriesState($initiativesQueries));
+  $initiativesQueries[0].refetch();
   const isAccessible = $derived($initiativesQueries[0].data);
   let selectedTab = $state(getSelectedTab('initiatives'));
 
@@ -142,6 +146,7 @@
       : []
   );
 
+  $initiativesQueries[1].refetch();
   const tasks = $derived(
     $initiativesQueries[1].isSuccess
       ? ($initiativesQueries[1].data as RNSTask[])
@@ -635,8 +640,7 @@
 {:else if isAccessible}
   {@render accessible()}
 {:else}
-  {@render loading()}
-  <!-- {@render fallback()} -->
+  {@render fallback()}
 {/if}
 
 <HoveredRNSCard />
@@ -765,7 +769,7 @@
               <Sparkles class="h-4 w-4" />Generate
             {/if}
           </Button>
-          <DropdownMenu.Root>
+          <DropdownMenu.Root bind:open={dropdownOpen}>
             <DropdownMenu.Trigger>
               <Button
                 class="rounded-bl-none rounded-tl-none border-l border-primary/20 bg-primary px-2 py-2 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
@@ -880,5 +884,13 @@
 {/snippet}
 
 {#snippet fallback()}
-  <h1>Huh</h1>
+  <div class="text-2xl font-bold mt-10 text-center">
+    {#if data.role === 'Startup'}
+      Your mentor has not yet created Readiness and Needs Assessments.
+    {:else if data.role === 'Mentor'}
+      Please create Readiness and Needs Assessments for your startup.
+    {:else}
+      Something went wrong...
+    {/if}
+  </div>
 {/snippet}

@@ -5,9 +5,11 @@
   import { buttonVariants } from '$lib/components/ui/button/index.js';
 
   let { views } = $props();
+
+  let dropdownOpen = $state(false);
 </script>
 
-<DropdownMenu.Root>
+<DropdownMenu.Root bind:open={dropdownOpen}>
   <DropdownMenu.Trigger class={buttonVariants({ variant: 'outline' })}>
     <SlidersHorizontal class="h-4 w-4" />
     View</DropdownMenu.Trigger

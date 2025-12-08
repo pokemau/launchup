@@ -17,7 +17,7 @@ const createConfig = () => {
     driver: PostgreSqlDriver,
     driverOptions: {
       connection: {
-        ssl: { rejectUnauthorized: false },
+        // ssl: { rejectUnauthorized: false },
       },
     },
   });

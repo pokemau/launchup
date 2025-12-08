@@ -9,9 +9,13 @@
   export let showDialog: boolean = false;
   export let toggleDialog: () => void;
   export let mentors: any[] = [];
-  export let assessments: {id: number, name: string, fields: {id: number, label: string, fieldType: number}[]}[] = [];
+  export let assessments: Array<{
+    name: string;
+    assessments: Array<{ id: number; name: string; fieldsCount: number }>;
+  }> = [];
   export let approveStartup: (startupId: number, mentorId: any) => Promise<void>;
   export let assignAssessmentsToStartup: (startupId: number, assessmentTypeIds: number[]) => Promise<any>;
+  export let access: string;
 
   const memberCount = getStartupMemberCount(startup);
 
@@ -19,6 +23,16 @@
   let isLoading = false;
 
   $: statusColors = getBadgeColorObject('Waitlisted');
+
+  // Filter out empty assessment types and flatten to array with type info
+  $: flatAssessments = assessments
+    .filter((group) => group.assessments.length > 0) // Only include types with assessments
+    .flatMap((group) =>
+      group.assessments.map((asmt) => ({
+        ...asmt,
+        assessmentType: group.name // Add the type name to each assessment
+      }))
+    );
 
 </script>
 
@@ -205,8 +219,9 @@
     showDialog={showApprovalDialog}
     toggleDialog={() => showApprovalDialog = !showApprovalDialog}
     {mentors}
-    {assessments}
+    assessments={flatAssessments}
     onApprove={approveStartup}
     {assignAssessmentsToStartup}
+    {access}
   />
 {/if}

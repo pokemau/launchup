@@ -1,8 +1,9 @@
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = ({ cookies, params, locals }) => {
+export const load: PageServerLoad = ({ cookies, params, locals, parent }) => {
   return {
     startupId: params.id,
-    access: cookies.get('Access')
+    access: cookies.get('Access'),
+    role: locals.user?.role
   };
 };

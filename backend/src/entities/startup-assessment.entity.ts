@@ -1,18 +1,25 @@
-import { Entity, PrimaryKey, Property, ManyToOne, Enum } from "@mikro-orm/core";
-import { AssessmentStatus } from "./enums/assessment-util.enum";
-import { AssessmentType } from "./assessment-type.entity";
+import { Entity, PrimaryKey, ManyToOne, Enum } from '@mikro-orm/core';
+import { AssessmentStatus } from './enums/assessment-util.enum';
+import { Startup } from './startup.entity';
+import { Assessment } from './assessment.entity';
 
-@Entity({ tableName: "startup_assessments" })
+@Entity({ tableName: 'startup_assessments' })
 export class StartupAssessment {
   @PrimaryKey({ autoincrement: true })
   id!: number;
 
-  @Property()
-  startupId!: number; // FK → Startup table
+  @ManyToOne(() => Startup, { deleteRule: 'cascade' })
+  startup!: Startup;
 
-  @ManyToOne(() => AssessmentType, { deleteRule: 'cascade' })
-  assessmentType!: AssessmentType;
+  @ManyToOne(() => Assessment, { deleteRule: 'cascade' })
+  assessment!: Assessment;
 
   @Enum(() => AssessmentStatus)
-  status!: AssessmentStatus; // "Pending" | "Completed"
+  status!: AssessmentStatus; // Pending or Completed
+
+  // @Property({ onCreate: () => new Date() })
+  // assignedAt = new Date();
+
+  // @Property({ nullable: true })
+  // completedAt?: Date;
 }
