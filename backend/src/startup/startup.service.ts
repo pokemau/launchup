@@ -47,7 +47,9 @@ export class StartupService {
       case Role.Startup:
         return await this.em.find(
           Startup,
-          { user: userId },
+          {
+            $or: [{ user: userId }, { members: { id: userId } }],
+          },
           {
             populate: [
               'user',
