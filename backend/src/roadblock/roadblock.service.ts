@@ -16,7 +16,6 @@ import { AiService } from 'src/ai/ai.service';
 import { RnsStatus } from 'src/entities/enums/rns.enum';
 import { Rns } from 'src/entities/rns.entity';
 import { Initiative } from 'src/entities/initiative.entity';
-import { createBasePrompt } from 'src/ai/utils/prompt.utils';
 import { RoadblockChatHistory } from 'src/entities/roadblock-chat-history.entity';
 
 @Injectable()
@@ -256,7 +255,7 @@ export class RoadblockService {
         'No capsule proposal found for this startup.',
       );
 
-    const basePrompt = await createBasePrompt(startup, this.em);
+    const basePrompt = await this.aiService.createBasePrompt(startup, this.em);
 
     const prompt = `${basePrompt}
 

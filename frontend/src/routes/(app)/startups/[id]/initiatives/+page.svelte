@@ -67,6 +67,7 @@
   ]);
 
   const { isLoading, isError } = $derived(useQueriesState($initiativesQueries));
+  $initiativesQueries[0].refetch();
   const isAccessible = $derived($initiativesQueries[0].data);
   let selectedTab = $state(getSelectedTab('initiatives'));
 
@@ -142,6 +143,7 @@
       : []
   );
 
+  $initiativesQueries[1].refetch();
   const tasks = $derived(
     $initiativesQueries[1].isSuccess
       ? ($initiativesQueries[1].data as RNSTask[])
@@ -635,8 +637,7 @@
 {:else if isAccessible}
   {@render accessible()}
 {:else}
-  {@render loading()}
-  <!-- {@render fallback()} -->
+  {@render fallback()}
 {/if}
 
 <HoveredRNSCard />
@@ -880,5 +881,13 @@
 {/snippet}
 
 {#snippet fallback()}
-  <h1>Huh</h1>
+  <div class="text-2xl font-bold mt-10 text-center">
+    {#if data.role === 'Startup'}
+      Your mentor has not yet created Readiness and Needs Assessments.
+    {:else if data.role === 'Mentor'}
+      Please create Readiness and Needs Assessments for your startup.
+    {:else}
+      Something went wrong...
+    {/if}
+  </div>
 {/snippet}

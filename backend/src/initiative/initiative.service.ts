@@ -14,7 +14,6 @@ import { Rns } from 'src/entities/rns.entity';
 import { User } from 'src/entities/user.entity';
 import { Startup } from 'src/entities/startup.entity';
 import { AiService } from 'src/ai/ai.service';
-import { createBasePrompt } from 'src/ai/utils/prompt.utils';
 import { RnsStatus } from 'src/entities/enums/rns.enum';
 import { InitiativeChatHistory } from 'src/entities/initiative-chat-history.entity';
 
@@ -193,7 +192,7 @@ export class InitiativeService {
         const maxInitiativeNumber =
           (await this.em.count(Initiative, { startup: rns.startup })) + 1;
 
-        const basePrompt = await createBasePrompt(rns.startup, this.em);
+        const basePrompt = await  this.aiService.createBasePrompt(rns.startup, this.em);
         if (!basePrompt)
           throw new BadRequestException('No capsule proposal found');
 
@@ -277,7 +276,7 @@ export class InitiativeService {
         },
       );
 
-      const basePrompt = await createBasePrompt(rns.startup, this.em);
+      const basePrompt = await  this.aiService.createBasePrompt(rns.startup, this.em);
       if (!basePrompt)
         throw new BadRequestException('No capsule proposal found');
 
@@ -360,7 +359,7 @@ export class InitiativeService {
         'No capsule proposal found for this startup.',
       );
 
-    const basePrompt = await createBasePrompt(startup, this.em);
+    const basePrompt = await  this.aiService.createBasePrompt(startup, this.em);
 
     const prompt = `${basePrompt}
 

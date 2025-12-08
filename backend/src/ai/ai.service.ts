@@ -259,12 +259,12 @@ export class AiService {
       },
     );
 
-    const trl = startupReadinessLevels[0].readinessLevel.level;
-    const mrl = startupReadinessLevels[1].readinessLevel.level;
-    const arl = startupReadinessLevels[2].readinessLevel.level;
-    const orl = startupReadinessLevels[3].readinessLevel.level;
-    const rrl = startupReadinessLevels[4].readinessLevel.level;
-    const irl = startupReadinessLevels[5].readinessLevel.level;
+    const trl = startupReadinessLevels[0]?.readinessLevel.level || 0;
+    const mrl = startupReadinessLevels[1]?.readinessLevel.level || 0;
+    const arl = startupReadinessLevels[2]?.readinessLevel.level || 0;
+    const orl = startupReadinessLevels[3]?.readinessLevel.level || 0;
+    const rrl = startupReadinessLevels[4]?.readinessLevel.level || 0;
+    const irl = startupReadinessLevels[5]?.readinessLevel.level || 0;
 
     return `
       Given these data:
