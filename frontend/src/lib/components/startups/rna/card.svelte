@@ -29,7 +29,7 @@
       </h2>
     </div>
     <div class="break-words text-sm text-muted-foreground">
-      {rna.rna.substring(0, 150) + `${rna.rna.length > 150 ? '...' : ''}`}
+      {@html rna.rna.substring(0, 150) + `${rna.rna.length > 150 ? '...' : ''}`}
     </div>
     <div class="text-sm text-muted-foreground">
       Current Level: <Badge variant="secondary"
