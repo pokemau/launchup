@@ -7,8 +7,8 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import Rubric from '$lib/components/startups/readiness/rubric.svelte';
   import * as Card from '$lib/components/ui/card/index.js';
-  import { Can, RadarChartV2 } from '$lib/components/shared/index.js';
   import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+  import { Can, RadarChartV2 } from '$lib/components/shared';
 
   const { data } = $props();
   const { access, startupId, role } = data;
@@ -119,33 +119,41 @@
 
   const readiness = $derived(() => {
     const query = $readinessLevelQueries[3];
-    const latest = query.data.slice(-6) ?? [];
 
-    if (!query.isSuccess || latest.length === 0) {
+    if (!query.isSuccess || !query.data || query.data.length === 0) {
       return {
-        technology: 0,
-        organizational: 0,
-        acceptance: 0,
-        market: 0,
-        regulatory: 0,
-        investment: 0
+        technology: 1,
+        organizational: 1,
+        acceptance: 1,
+        market: 1,
+        regulatory: 1,
+        investment: 1
       };
     }
 
-    const getLevel = (type: string) => {
-      const match = latest.find(
+    const getLatestLevel = (type: string) => {
+      const entriesForType = query.data.filter(
         (r: any) => r.readinessLevel.readinessType === type
       );
-      return match?.readinessLevel.level ?? 0;
+
+      if (entriesForType.length === 0) {
+        return 1;
+      }
+
+      const latestEntry = entriesForType.reduce((latest: any, current: any) =>
+        current.id > latest.id ? current : latest
+      );
+
+      return latestEntry?.readinessLevel.level ?? 1;
     };
 
     return {
-      technology: getLevel('Technology'),
-      organizational: getLevel('Organizational'),
-      acceptance: getLevel('Acceptance'),
-      market: getLevel('Market'),
-      regulatory: getLevel('Regulatory'),
-      investment: getLevel('Investment')
+      Technology: getLatestLevel('Technology'),
+      Organizational: getLatestLevel('Organizational'),
+      Acceptance: getLatestLevel('Acceptance'),
+      Market: getLatestLevel('Market'),
+      Regulatory: getLatestLevel('Regulatory'),
+      Investment: getLatestLevel('Investment')
     };
   });
 
@@ -205,7 +213,7 @@
         <Skeleton class="h-9 w-[147px]" />
       </div>
     {/if}
-    <div class="bg-background h-full w-full">
+    <div class="h-full w-full bg-background">
       <Skeleton class="h-full w-full" />
     </div>
   </div>
@@ -219,22 +227,10 @@
   <div class="flex h-full flex-col gap-3">
     <Can role={['Mentor', 'Manager as Mentor']} userRole={role}>
       <div class="flex justify-between">
-        <div class="bg-background flex h-fit justify-between rounded-lg">
-          <!-- <Tabs.Root value={selectedTab}> -->
-          <!--   <Tabs.List class="border bg-flutter-gray/20"> -->
-          <!--     <Tabs.Trigger value="chart" class="capitalize" onclick={() => updateTab('chart')} -->
-          <!--       >Chart</Tabs.Trigger -->
-          <!--     > -->
-          <!--     <Tabs.Trigger -->
-          <!--       value="detailed" -->
-          <!--       class="capitalize" -->
-          <!--       onclick={() => updateTab('detailed')}>Detailed</Tabs.Trigger -->
-          <!--     > -->
-          <!--   </Tabs.List> -->
-          <!-- </Tabs.Root> -->
+        <div class="flex h-fit justify-between rounded-lg bg-background">
         </div>
         {#if selectedTab === 'detailed'}
-          <div class="bg-background flex h-fit justify-between rounded-lg">
+          <div class="flex h-fit justify-between rounded-lg bg-background">
             <Tabs.Root value={selectedReadinessTab}>
               <Tabs.List class="bg-flutter-gray/20 border">
                 <Tabs.Trigger
@@ -287,26 +283,25 @@
         <Card.Content class="flex items-center justify-center">
           <RadarChartV2
             id={Number(startupId)}
-            min={1}
+            min={0}
             max={9}
-            data={[
-              readiness().technology,
-              readiness().market,
-              readiness().acceptance,
-              readiness().regulatory,
-              readiness().organizational,
-              readiness().investment
-            ]}
             labels={[
               'Technology',
-              'Market',
-              'Acceptance',
-              'Regulatory',
               'Organizational',
+              'Market',
+              'Regulatory',
+              'Acceptance',
               'Investment'
             ]}
+            data={[
+              readiness().Technology,
+              readiness().Organizational,
+              readiness().Market,
+              readiness().Regulatory,
+              readiness().Acceptance,
+              readiness().Investment
+            ]}
           />
-          <!-- <RadarChart trl={readiness.technology} mrl={readiness.market} irl={readiness.investment} arl={readiness.acceptance} orl={readiness.organizational} rrl={readiness.regulatory}/> -->
         </Card.Content>
         <!-- <Card.Footer class="flex-col gap-2 text-sm">
 					<div class="flex items-center gap-2 font-medium leading-none">

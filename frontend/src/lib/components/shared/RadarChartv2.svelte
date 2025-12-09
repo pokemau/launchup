@@ -1,17 +1,35 @@
 <script lang="ts">
   import Chart from 'chart.js/auto';
   import { browser } from '$app/environment';
-  import { onMount } from 'svelte';
-  export let min: number, max: number, labels: any, data: any, id: number;
-  // export let trl: number = 9, orl: number = 7, mrl: number = 6, rrl: number = 8, arl: number = 5, irl: number = 7, id: number;
-  // ['Technology', 'Organizational', 'Market', 'Regulatory', 'Acceptance', 'Investment']
-  const redrawChart = () => {
-    let ctx: HTMLCanvasElement;
-    const d = {
+  import { onMount, onDestroy } from 'svelte';
+
+  let {
+    min,
+    max,
+    labels,
+    data,
+    id
+  }: { min: number; max: number; labels: any; data: any; id: number } =
+    $props();
+
+  let chart: Chart | null = null;
+  let ctx: HTMLCanvasElement;
+
+  const createChart = () => {
+    if (!browser) return;
+
+    ctx = document.getElementById(`chart${id}`) as HTMLCanvasElement;
+    if (!ctx) return;
+
+    if (chart) {
+      chart.destroy();
+    }
+
+    const chartData = {
       labels,
       datasets: [
         {
-          label: 'Readiness Levels',
+          label: 'Readiness Level',
           data,
           fill: true,
           backgroundColor: 'rgba(54, 162, 235, 0.2)',
@@ -24,34 +42,44 @@
       ]
     };
 
-    if (browser) {
-      ctx = document.getElementById(`chart${id}`) as HTMLCanvasElement;
-      const chart = new Chart(ctx, {
-        type: 'radar',
-        data: d,
-        options: {
-          scales: {
-            r: {
-              min,
-              max,
-              ticks: {
-                stepSize: 1
-              }
-            }
-          },
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
+    chart = new Chart(ctx, {
+      type: 'radar',
+      data: chartData,
+      options: {
+        scales: {
+          r: {
+            min,
+            max,
+            ticks: {
+              stepSize: 1
             }
           }
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
         }
-      });
-    }
+      }
+    });
   };
+
   onMount(() => {
-    redrawChart();
+    createChart();
+  });
+
+  onDestroy(() => {
+    if (chart) {
+      chart.destroy();
+    }
+  });
+
+  $effect(() => {
+    if (browser && data && labels) {
+      createChart();
+    }
   });
 </script>
 
