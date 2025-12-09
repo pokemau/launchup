@@ -1,11 +1,10 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog/index.js';
 
-  export let open = false;
-  export let onOpenChange: any;
+  let { open = $bindable(false) } = $props();
 </script>
 
-<Dialog.Root bind:open {onOpenChange}>
+<Dialog.Root bind:open>
   <Dialog.Content class="h-4/6 max-w-[900px] overflow-auto">
     <div class="flex gap-10">
       <div class="flex w-4/6 min-w-0 flex-col gap-4">
