@@ -420,7 +420,19 @@ export class RnsService {
       User: ${latestPrompt}\n
       Please rewrite or refine the RNS description according to the user's instructions. Just write the refined description, no other text.
 
+      FORMATTING INSTRUCTIONS:
+      You can use HTML formatting in your refined text:
+      - <p> for paragraphs
+      - <strong> for bold text
+      - <em> for italic text
+      - <u> for underline
+      - <br> for line breaks
+      - Use • (bullet character) for bullet points
+      Example: <p><strong>Key Point</strong>: This is <em>important</em> information.</p>
+      Example with bullets: <p>• First point<br>• Second point<br>• Third point</p>
+
       After you rewrite/refine the RNS description, write '=========' on a new line, then provide a brief AI commentary (1-2 sentences) explaining the changes or improvements you made. Example:\n<refined description>\n=========\n<ai commentary>
+      DO NOT MENTION THE FORMATTING INSTRUCTIONS OR HOW YOU FORMATTED THE RESPONSE IN THE COMMENTARY.
     `;
 
     const result = await this.aiService.refineRnsDescription(prompt);

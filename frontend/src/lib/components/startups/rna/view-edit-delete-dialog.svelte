@@ -9,8 +9,7 @@
   import SectionTitle from '../base/SectionTitle.svelte';
 
   let {
-    open,
-    onOpenChange,
+    open = $bindable(),
     rna,
     deleteRna,
     update,
@@ -38,7 +37,7 @@
   let rnaDialog = $state(false);
 </script>
 
-<ViewEditDeleteDialog {open} {onOpenChange}>
+<ViewEditDeleteDialog bind:open>
   <svelte:fragment slot="editableSection">
     <SectionTitle>{rnaCopy.readinessLevel.readinessType}</SectionTitle>
     <EditableSection

@@ -277,7 +277,15 @@ export class RoadblockService {
         2. Do not modify any other fields
         3. Respond with a JSON object containing ONLY the requested refinements
         4. If the user did not specify a field to refine, refine all fields.
-        4. Use the exact field names shown in the example
+        5. Use the exact field names shown in the example
+        6. You can use HTML formatting in your refined text:
+           - <p> for paragraphs
+           - <strong> for bold text
+           - <em> for italic text
+           - <u> for underline
+           - <br> for line breaks
+           - • for bullet points
+           Example: <p><strong>Key Point</strong>: This is <em>important</em> information.</p>
 
         Example response format:
         If user asks to update description only:
@@ -303,6 +311,7 @@ export class RoadblockService {
         - If the user specifies, only include fields that the user specifically asks to refine
         - The JSON must be valid and properly formatted
         - Always include the ========= separator followed by your commentary
+        - DO NOT MENTION THE FORMATTING INSTRUCTIONS OR HOW YOU FORMATTED THE RESPONSE IN THE COMMENTARY.
         `;
 
     const result = await this.aiService.refineRoadblock(prompt);
