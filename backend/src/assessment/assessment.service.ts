@@ -28,9 +28,7 @@ export class AssessmentService {
    * Create a new assessment
    * POST /assessments
    */
-  async createAssessment(
-    dto: CreateAssessmentDto,
-  ): Promise<{
+  async createAssessment(dto: CreateAssessmentDto): Promise<{
     id: number;
     assessmentType: string;
     name: string;
@@ -255,72 +253,44 @@ export class AssessmentService {
   }
 
   /**
-   * Assign multiple assessments to a startup
-   * POST /assessments/startup-assessment
+   * Assign all assessments to a startup
+   * POST /assessments/startup-assessment/:id
    */
-  async assignAssessmentsToStartup(
-    dto: AssignAssessmentsToStartupDto,
-  ): Promise<{
-    assigned: number;
-    replaced: number;
-    results: Array<{
-      assessmentId: number;
-      status: 'assigned' | 'replaced';
-    }>;
+  async assignAssessmentsToStartup(id: number): Promise<{
+    message: string;
   }> {
-    const startup = await this.em.findOne(Startup, { id: dto.startupId });
+    const startup = await this.em.findOne(Startup, { id });
     if (!startup) {
-      throw new NotFoundException(`Startup with ID ${dto.startupId} not found`);
+      throw new NotFoundException(`Startup with ID ${id} not found`);
     }
 
-    let assigned = 0;
-    let replaced = 0;
-    const results: Array<{
-      assessmentId: number;
-      status: 'assigned' | 'replaced';
-    }> = [];
+    const allAssessments = await this.em.find(Assessment, {});
 
-    for (const assessmentId of dto.assessmentTypeIds) {
-      const assessment = await this.em.findOne(Assessment, {
-        id: assessmentId,
-      });
+    const existingAssignments = await this.em.find(StartupAssessment, {
+      startup: { id },
+    });
 
-      if (!assessment) {
-        console.warn(`Assessment with ID ${assessmentId} not found, skipping`);
-        continue;
+    const existingAssessmentIds = new Set(
+      existingAssignments.map((sa) => sa.assessment.id),
+    );
+
+    const newAssignments: StartupAssessment[] = [];
+    for (const assessment of allAssessments) {
+      if (!existingAssessmentIds.has(assessment.id)) {
+        const startupAssessment = this.em.create(StartupAssessment, {
+          startup,
+          assessment,
+        });
+        newAssignments.push(startupAssessment);
       }
-
-      // Check if there's an existing assignment for the same assessment
-      const existing = await this.em.findOne(StartupAssessment, {
-        startup: startup,
-        assessment: assessment,
-      });
-
-      if (existing) {
-        // Already assigned, skip
-        continue;
-      }
-
-      // Create new assignment
-      const startupAssessment = this.em.create(StartupAssessment, {
-        startup: startup,
-        assessment: assessment,
-      });
-
-      this.em.persist(startupAssessment);
-      assigned++;
-      results.push({
-        assessmentId: assessmentId,
-        status: 'assigned',
-      });
     }
 
-    await this.em.flush();
+    if (newAssignments.length > 0) {
+      await this.em.persistAndFlush(newAssignments);
+    }
 
     return {
-      assigned,
-      replaced,
-      results,
+      message: `Successfully assigned ${newAssignments.length} new assessment(s) to startup. Total assessments: ${allAssessments.length}`,
     };
   }
 

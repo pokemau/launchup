@@ -63,9 +63,9 @@ export class AssessmentController {
     return this.assessmentService.deleteAssessment(id);
   }
 
-  @Post('startup-assessment')
-  async assignAssessmentsToStartup(@Body() dto: AssignAssessmentsToStartupDto) {
-    return await this.assessmentService.assignAssessmentsToStartup(dto);
+  @Post('startup-assessment/:id')
+  async assignAssessmentsToStartup(@Param('id', ParseIntPipe) id: number) {
+    return await this.assessmentService.assignAssessmentsToStartup(id);
   }
 
   @Get('startup/:id')
