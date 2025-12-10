@@ -30,18 +30,13 @@ export class SubmitAssessmentDto {
   responses: SubmitAnswerDto[];
 }
 
-export interface AssessmentFieldDto {
-  id: string;
-  description: string;
-  type: string;
+export interface AssessmentDto {
+  id: number;
+  name: string;
+  assessmentType: string;
+  answerType: string;
   answer?: string;
   fileUrl?: string;
-}
-
-export interface AssessmentDto {
-  name: string;
-  assessmentStatus: string;
-  assessmentFields: AssessmentFieldDto[];
 }
 
 // Admin DTOs
@@ -51,6 +46,9 @@ export class CreateAssessmentDto {
 
   @IsString()
   name: string;
+
+  @IsEnum(AssessmentAnswerType)
+  answerType: AssessmentAnswerType;
 }
 
 export class UpdateAssessmentDto {
@@ -59,33 +57,12 @@ export class UpdateAssessmentDto {
   name?: string;
 
   @IsOptional()
-  @IsString()
-  description?: string;
-}
-
-export class CreateAssessmentFieldDto {
-  @IsString()
-  description: string;
-
-  @IsEnum(AssessmentAnswerType)
-  answerType: AssessmentAnswerType;
-}
-
-export class CreateAssessmentFieldsDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateAssessmentFieldDto)
-  fields: CreateAssessmentFieldDto[];
-}
-
-export class UpdateAssessmentFieldDto {
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsOptional()
   @IsEnum(AssessmentAnswerType)
   answerType?: AssessmentAnswerType;
+
+  @IsOptional()
+  @IsEnum(AssessmentType)
+  assessmentType?: AssessmentType;
 }
 
 // Startup DTOs
@@ -105,7 +82,7 @@ export class AssignAssessmentsToStartupDto {
 
 export class SubmitResponseDto {
   @IsNumber()
-  assessmentFieldId: number;
+  assessmentId: number;
 
   @IsOptional()
   @IsString()

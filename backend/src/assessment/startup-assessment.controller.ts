@@ -68,19 +68,4 @@ export class StartupAssessmentController {
       assessmentId,
     );
   }
-
-  /**
-   * Mark assessment as complete
-   * PATCH /startups/:id/assessments/:assessmentId/complete
-   */
-  @Patch(':id/assessments/:assessmentId/complete')
-  async markAssessmentComplete(
-    @Param('id', ParseIntPipe) startupId: number,
-    @Param('assessmentId', ParseIntPipe) assessmentId: number,
-  ) {
-    return this.assessmentService.markAssessmentComplete(
-      startupId,
-      assessmentId,
-    );
-  }
 }

@@ -1,6 +1,6 @@
 import { Entity, PrimaryKey, Property, ManyToOne } from '@mikro-orm/core';
 import { Startup } from './startup.entity';
-import { AssessmentField } from './assessment-field.entity';
+import { Assessment } from './assessment.entity';
 
 @Entity({ tableName: 'startup_responses' })
 export class StartupResponse {
@@ -10,8 +10,8 @@ export class StartupResponse {
   @ManyToOne(() => Startup, { deleteRule: 'cascade' })
   startup!: Startup;
 
-  @ManyToOne(() => AssessmentField, { deleteRule: 'cascade' })
-  assessmentField!: AssessmentField;
+  @ManyToOne(() => Assessment, { deleteRule: 'cascade' })
+  assessment!: Assessment;
 
   // For text answers (ShortAnswer, LongAnswer)
   @Property({ nullable: true, type: 'text' })

@@ -1,5 +1,4 @@
-import { Entity, PrimaryKey, ManyToOne, Enum } from '@mikro-orm/core';
-import { AssessmentStatus } from './enums/assessment-util.enum';
+import { Entity, PrimaryKey, ManyToOne } from '@mikro-orm/core';
 import { Startup } from './startup.entity';
 import { Assessment } from './assessment.entity';
 
@@ -13,13 +12,4 @@ export class StartupAssessment {
 
   @ManyToOne(() => Assessment, { deleteRule: 'cascade' })
   assessment!: Assessment;
-
-  @Enum(() => AssessmentStatus)
-  status!: AssessmentStatus; // Pending or Completed
-
-  // @Property({ onCreate: () => new Date() })
-  // assignedAt = new Date();
-
-  // @Property({ nullable: true })
-  // completedAt?: Date;
 }

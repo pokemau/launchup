@@ -21,8 +21,6 @@
 
   const { data, form } = $props();
 
-  console.log(data.assessments);
-
   const FIELD_TYPES = [
     { value: 1, label: 'Short Answer', icon: Type },
     { value: 2, label: 'Long Answer', icon: FileText },
@@ -44,18 +42,12 @@
   let showCreateTypeModal = $state(false);
   let createName = $state('');
   let selectedAssessmentType = $state('Technology');
-
-  // Fields modal state
-  let showFieldsModal = $state(false);
-  /** @type {any} */
-  let selectedAssessment = $state(null);
-  /** @type {any[]} */
-  let fields = $state([]);
+  let selectedFieldType = $state('1');
 
   // Field edit state
   let showFieldEditModal = $state(false);
-  /** @type {{ description: string; answerType: string; id?: number }} */
-  let editingField = $state({ description: '', answerType: '1' });
+  /** @type {{ name: string; answerType: string; assessmentType: string; id?: number }} */
+  let editingField = $state({ name: '', answerType: '1', assessmentType: 'Technology' });
 
   /** @type {Set<string>} */
   let expandedTypes = $state(new Set());
@@ -69,7 +61,6 @@
    * @param {() => Promise<void>} action
    */
   function openConfirm(text, action) {
-    showFieldsModal = false;
     confirmText = text;
     confirmAction = action;
     showConfirm = true;
@@ -90,65 +81,48 @@
   /**
    * @param {any} assessment
    */
-  async function openAssessmentFields(assessment) {
-    selectedAssessment = assessment;
-    await fetchFields(assessment.id);
-    showFieldsModal = true;
+  function openAssessmentFields(assessment) {
+    // Open edit modal directly
+    openFieldModal(assessment);
   }
 
   /**
-   * @param {number} assessmentId
+   * @param {any} assessment
    */
-  async function fetchFields(assessmentId) {
-    const res = await fetch(
-      `${PUBLIC_API_URL}/assessments/${assessmentId}/fields`,
-      {
-        headers: { Authorization: `Bearer ${data.access}` }
-      }
-    );
-    if (!res.ok) {
-      console.error('Failed to load fields', res.status, await res.text());
-      alert(`Failed to load fields (${res.status}).`);
-      return;
-    }
-    fields = await res.json();
-  }
-
-  /**
-   * @param {any} field
-   */
-  function openFieldModal(field = null) {
-    if (field) {
+  function openFieldModal(assessment = null) {
+    if (assessment) {
       // Convert backend enum name to numeric string value
       const answerTypeValue =
-        typeof field.answerType === 'string'
-          ? ANSWER_TYPE_MAP[field.answerType] || 1
-          : field.answerType;
+        typeof assessment.answerType === 'string'
+          ? ANSWER_TYPE_MAP[assessment.answerType] || 1
+          : assessment.answerType;
 
       editingField = {
-        ...field,
-        answerType: String(answerTypeValue)
+        id: assessment.id,
+        name: assessment.name,
+        answerType: String(answerTypeValue),
+        assessmentType: assessment.assessmentType || 'Technology'
       };
     } else {
-      editingField = { description: '', answerType: '1' };
+      editingField = { name: '', answerType: '1', assessmentType: 'Technology' };
     }
-    showFieldsModal = false; // Close fields modal
     showFieldEditModal = true;
   }
 
   async function saveField() {
-    if (!editingField.description?.trim()) return;
+    if (!editingField.name?.trim()) return;
 
     const payload = {
-      description: editingField.description.trim(),
-      answerType: Number(editingField.answerType)
+      name: editingField.name.trim(),
+      answerType: Number(editingField.answerType),
+      assessmentType: editingField.assessmentType.trim()
     };
 
     let res;
     if (editingField.id) {
-      // Update existing field
+      // Update existing assessment
       res = await fetch(
-        `${PUBLIC_API_URL}/assessments/fields/${editingField.id}`,
+        `${PUBLIC_API_URL}/assessments/${editingField.id}`,
         {
           method: 'PATCH',
           headers: {
@@ -158,78 +132,22 @@
           body: JSON.stringify(payload)
         }
       );
-    } else {
-      // Create new field
-      res = await fetch(
-        `${PUBLIC_API_URL}/assessments/fields/${selectedAssessment.id}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${data.access}`
-          },
-          body: JSON.stringify(payload)
-        }
-      );
     }
 
     if (!res.ok) {
-      console.error('Save field failed', res.status, await res.text());
-      alert(`Save field failed (${res.status}).`);
+      console.error('Update assessment failed', res.status, await res.text());
+      alert(`Update assessment failed (${res.status}).`);
       return;
     }
 
     showFieldEditModal = false;
-    showFieldsModal = true;
-    await fetchFields(selectedAssessment.id);
-    await refreshAssessments();
-  }
-
-  /**
-   * @param {number} fieldId
-   */
-  async function deleteField(fieldId) {
-    const res = await fetch(`${PUBLIC_API_URL}/assessments/fields/${fieldId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${data.access}` }
-    });
-    if (!res.ok) {
-      console.error('Delete field failed', res.status, await res.text());
-      alert(`Delete field failed (${res.status}).`);
-      return;
-    }
-    await fetchFields(selectedAssessment.id);
-    await refreshAssessments();
-  }
-
-  async function createAssessment() {
-    if (!createName.trim()) return;
-    const res = await fetch(`${PUBLIC_API_URL}/assessments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${data.access}`
-      },
-      body: JSON.stringify({
-        name: createName.trim(),
-        assessmentType: selectedAssessmentType.trim()
-      })
-    });
-    if (!res.ok) {
-      console.error('Create assessment failed', res.status, await res.text());
-      alert(`Create assessment failed (${res.status}). Check backend logs.`);
-      return;
-    }
-    createName = '';
-    selectedAssessmentType = 'Technology';
-    showCreateTypeModal = false;
     await refreshAssessments();
   }
 
   async function deleteAssessment() {
-    if (!selectedAssessment?.id) return;
+    if (!editingField?.id) return;
     const res = await fetch(
-      `${PUBLIC_API_URL}/assessments/${selectedAssessment.id}`,
+      `${PUBLIC_API_URL}/assessments/${editingField.id}`,
       {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${data.access}` }
@@ -240,8 +158,7 @@
       alert(`Delete assessment failed (${res.status}).`);
       return;
     }
-    showFieldsModal = false;
-    selectedAssessment = null;
+    showFieldEditModal = false;
     await refreshAssessments();
   }
 </script>
@@ -308,13 +225,15 @@
               {#if assessments.length > 0}
                 <div class="space-y-2">
                   {#each assessments as assessment}
+                    {@const AnswerTypeIcon =
+                      FIELD_TYPES.find((t) => t.label === assessment.answerType)?.icon ?? FileText}
                     <button
                       class="hover:bg-card/80 hover:border-flutter-blue/30 w-full rounded-lg border bg-card p-4 text-left transition-colors"
                       onclick={() => openAssessmentFields(assessment)}
                     >
                       <div class="flex items-start gap-3">
                         <div class="rounded-lg bg-muted p-2">
-                          <ClipboardList
+                          <AnswerTypeIcon
                             class="h-4 w-4 text-muted-foreground"
                           />
                         </div>
@@ -322,10 +241,7 @@
                           <p class="text-sm font-medium">{assessment.name}</p>
                           <div class="mt-1 flex items-center gap-2">
                             <Badge variant="secondary" class="text-xs">
-                              {assessment.fieldsCount}
-                              {assessment.fieldsCount === 1
-                                ? 'field'
-                                : 'fields'}
+                              {assessment.answerType}
                             </Badge>
                           </div>
                         </div>
@@ -357,181 +273,6 @@
   </div>
 </div>
 
-<!-- Fields Modal -->
-{#if selectedAssessment}
-  <Dialog.Root
-    open={showFieldsModal}
-    onOpenChange={(v) => (showFieldsModal = v)}
-  >
-    <Dialog.Content class="max-h-[90vh] max-w-[1000px] overflow-hidden p-0">
-      <!-- Header Section -->
-      <div
-        class="from-flutter-blue/5 border-b bg-gradient-to-r to-transparent px-6 py-5"
-      >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <div class="mb-2 flex items-center gap-3">
-              <div class="bg-flutter-blue/10 rounded-lg p-2.5">
-                <ClipboardList class="text-flutter-blue h-5 w-5" />
-              </div>
-              <div>
-                <Dialog.Title class="text-2xl font-bold"
-                  >{selectedAssessment.name}</Dialog.Title
-                >
-                <Dialog.Description class="mt-1">
-                  Manage fields for this assessment
-                </Dialog.Description>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Content Section -->
-      <div class="max-h-[calc(90vh-200px)] overflow-y-auto px-6 py-6">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="bg-flutter-blue h-1 w-1 rounded-full"></div>
-              <div>
-                <h3
-                  class="text-sm font-bold uppercase tracking-wider text-muted-foreground"
-                >
-                  Fields
-                </h3>
-                <p class="mt-0.5 text-xs text-muted-foreground">
-                  {fields.length}
-                  {fields.length === 1 ? 'field' : 'fields'} defined
-                </p>
-              </div>
-            </div>
-            <Button onclick={() => openFieldModal()} class="gap-2 shadow-sm">
-              <Plus class="h-4 w-4" />
-              Add Field
-            </Button>
-          </div>
-
-          <div class="space-y-3">
-            {#each fields as field, index}
-              {@const FieldIcon =
-                FIELD_TYPES.find((t) => t.value === field.answerType)?.icon ??
-                FileText}
-              <div
-                class="hover:border-flutter-blue/30 group relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md"
-              >
-                <div
-                  class="bg-flutter-blue/20 group-hover:bg-flutter-blue absolute bottom-0 left-0 top-0 w-1 transition-all"
-                ></div>
-                <div class="p-5 pl-6">
-                  <div class="flex items-start justify-between gap-4">
-                    <div class="min-w-0 flex-1">
-                      <div class="mb-3 flex items-center gap-3">
-                        <div
-                          class="group-hover:bg-flutter-blue/10 rounded-lg bg-muted p-2 transition-colors"
-                        >
-                          <FieldIcon
-                            class="group-hover:text-flutter-blue h-4 w-4 text-muted-foreground transition-colors"
-                          />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <div class="flex items-center gap-2">
-                            <span
-                              class="text-xs font-medium text-muted-foreground"
-                              >Field {index + 1}</span
-                            >
-                          </div>
-                          <h4 class="truncate text-base font-semibold">
-                            {field.description}
-                          </h4>
-                        </div>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <Badge variant="secondary" class="text-xs font-medium">
-                          {FIELD_TYPES.find((t) => t.value === field.answerType)
-                            ?.label ?? `Type ${field.answerType}`}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div class="flex shrink-0 gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onclick={() => openFieldModal(field)}
-                        class="h-9 gap-2"
-                      >
-                        <Edit2 class="h-3.5 w-3.5" />
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onclick={() =>
-                          openConfirm(
-                            'Remove this field? This action cannot be undone.',
-                            () => deleteField(field.id)
-                          )}
-                        class="h-9 gap-2"
-                      >
-                        <Trash2 class="h-3.5 w-3.5" />
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            {/each}
-
-            {#if !fields.length}
-              <div
-                class="bg-muted/30 hover:bg-muted/50 flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-16 text-center transition-colors"
-              >
-                <div class="mb-4 rounded-full bg-muted p-4">
-                  <FileText class="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p class="mb-1 text-base font-semibold text-foreground">
-                  No fields defined yet
-                </p>
-                <p class="mb-4 max-w-sm text-sm text-muted-foreground">
-                  Add fields to collect information for this assessment
-                </p>
-                <Button onclick={() => openFieldModal()} class="gap-2">
-                  <Plus class="h-4 w-4" />
-                  Add Your First Field
-                </Button>
-              </div>
-            {/if}
-          </div>
-        </div>
-      </div>
-
-      <!-- Footer Section -->
-      <div class="bg-muted/30 border-t px-6 py-4">
-        <div class="flex items-center justify-between">
-          <Button
-            variant="destructive"
-            onclick={() =>
-              openConfirm(
-                `Delete "${selectedAssessment.name}"? This will permanently remove the assessment and all its fields. This action cannot be undone.`,
-                () => deleteAssessment()
-              )}
-            class="gap-2"
-          >
-            <Trash2 class="h-4 w-4" />
-            Delete Assessment
-          </Button>
-          <Button
-            variant="outline"
-            onclick={() => (showFieldsModal = false)}
-            class="gap-2"
-          >
-            Close
-          </Button>
-        </div>
-      </div>
-    </Dialog.Content>
-  </Dialog.Root>
-{/if}
-
 <!-- Field Edit Modal -->
 <Dialog.Root
   open={showFieldEditModal}
@@ -539,19 +280,19 @@
 >
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
-      <Dialog.Title>{editingField?.id ? 'Edit' : 'Add'} Field</Dialog.Title>
+      <Dialog.Title>Update Assessment</Dialog.Title>
       <Dialog.Description
-        >Define how this field should appear and behave</Dialog.Description
+        >Update the assessment details</Dialog.Description
       >
     </Dialog.Header>
 
     <div class="space-y-4 pt-4">
       <div class="grid gap-2">
-        <Label for="fieldDescription">Field Description</Label>
+        <Label for="assessmentName">Assessment Name</Label>
         <Input
-          id="fieldDescription"
-          placeholder="Enter field description"
-          bind:value={editingField.description}
+          id="assessmentName"
+          placeholder="e.g., Product Viability"
+          bind:value={editingField.name}
         />
       </div>
 
@@ -587,6 +328,32 @@
           </Select.Content>
         </Select.Root>
       </div>
+
+      <div class="grid gap-2">
+        <Label for="assessmentType">Assessment Type</Label>
+        <Select.Root type="single" bind:value={editingField.assessmentType}>
+          <Select.Trigger class="w-full">
+            {#snippet children()}
+              <div class="flex items-center gap-2">
+                <ClipboardList class="h-4 w-4" />
+                <span>{editingField.assessmentType}</span>
+              </div>
+            {/snippet}
+          </Select.Trigger>
+          <Select.Content>
+            {#each ASSESSMENT_TYPES as assessmentType}
+              <Select.Item value={assessmentType}>
+                {#snippet children()}
+                  <div class="flex items-center gap-2">
+                    <ClipboardList class="h-4 w-4" />
+                    <span>{assessmentType}</span>
+                  </div>
+                {/snippet}
+              </Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
+      </div>
     </div>
 
     <Dialog.Footer class="mt-6">
@@ -594,13 +361,26 @@
         variant="outline"
         onclick={() => {
           showFieldEditModal = false;
-          showFieldsModal = true;
         }}>Cancel</Button
       >
-      <Button onclick={saveField} disabled={!editingField.description?.trim()}>
-        {editingField?.id ? 'Update' : 'Create'} Field
+      <Button onclick={saveField} disabled={!editingField.name?.trim()}>
+        Update Assessment
       </Button>
     </Dialog.Footer>
+    <div class="border-t pt-4">
+      <Button
+        variant="destructive"
+        onclick={() =>
+          openConfirm(
+            `Delete "${editingField.name}"? This will permanently remove the assessment. This action cannot be undone.`,
+            () => deleteAssessment()
+          )}
+        class="w-full gap-2"
+      >
+        <Trash2 class="h-4 w-4" />
+        Delete Assessment
+      </Button>
+    </div>
   </Dialog.Content>
 </Dialog.Root>
 
@@ -616,7 +396,6 @@
         variant="outline"
         onclick={() => {
           showConfirm = false;
-          showFieldsModal = true;
         }}>Cancel</Button
       >
       <Button
@@ -626,7 +405,6 @@
             await confirmAction();
           }
           showConfirm = false;
-          showFieldsModal = true; // Reopen fields modal
         }}
       >
         Confirm
@@ -656,6 +434,39 @@
           bind:value={createName}
           placeholder="e.g., Product Viability"
         />
+      </div>
+
+      <div class="grid gap-2">
+        <Label>Field Type</Label>
+        <Select.Root type="single" bind:value={selectedFieldType}>
+          <Select.Trigger class="w-full">
+            {#snippet children()}
+              {@const SelectedIcon =
+                FIELD_TYPES.find(
+                  (t) => t.value === Number(selectedFieldType)
+                )?.icon ?? FileText}
+              <div class="flex items-center gap-2">
+                <SelectedIcon class="h-4 w-4" />
+                {FIELD_TYPES.find(
+                  (t) => t.value === Number(selectedFieldType)
+                )?.label ?? 'Select type'}
+              </div>
+            {/snippet}
+          </Select.Trigger>
+          <Select.Content>
+            {#each FIELD_TYPES as t}
+              {@const Icon = t.icon}
+              <Select.Item value={String(t.value)}>
+                {#snippet children()}
+                  <div class="flex items-center gap-2">
+                    <Icon class="h-4 w-4" />
+                    {t.label}
+                  </div>
+                {/snippet}
+              </Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
       </div>
 
       <div class="grid gap-2">
@@ -691,6 +502,7 @@
         onclick={() => {
           showCreateTypeModal = false;
           createName = '';
+          selectedFieldType = '1';
         }}
       >
         Cancel

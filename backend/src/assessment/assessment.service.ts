@@ -7,23 +7,16 @@ import { EntityManager } from '@mikro-orm/core';
 import {
   CreateAssessmentDto,
   UpdateAssessmentDto,
-  CreateAssessmentFieldDto,
-  UpdateAssessmentFieldDto,
-  CreateAssessmentFieldsDto,
   AssignAssessmentDto,
   AssignAssessmentsToStartupDto,
   SubmitResponsesDto,
 } from './dto/assessment.dto';
 import { Assessment } from '../entities/assessment.entity';
-import { AssessmentField } from '../entities/assessment-field.entity';
 import { StartupAssessment } from '../entities/startup-assessment.entity';
 import { StartupResponse } from '../entities/startup-response.entity';
 import { Startup } from '../entities/startup.entity';
 import { AssessmentType } from '../entities/enums/assessment-type.enum';
-import {
-  AssessmentAnswerType,
-  AssessmentStatus,
-} from '../entities/enums/assessment-util.enum';
+import { AssessmentAnswerType } from '../entities/enums/assessment-util.enum';
 
 @Injectable()
 export class AssessmentService {
@@ -37,10 +30,16 @@ export class AssessmentService {
    */
   async createAssessment(
     dto: CreateAssessmentDto,
-  ): Promise<{ id: number; assessmentType: string; name: string }> {
+  ): Promise<{
+    id: number;
+    assessmentType: string;
+    name: string;
+    answerType: string;
+  }> {
     const assessment = this.em.create(Assessment, {
       assessmentType: dto.assessmentType,
       name: dto.name,
+      answerType: dto.answerType,
     });
 
     await this.em.persistAndFlush(assessment);
@@ -49,6 +48,7 @@ export class AssessmentService {
       id: assessment.id,
       assessmentType: assessment.assessmentType,
       name: assessment.name,
+      answerType: AssessmentAnswerType[assessment.answerType],
     };
   }
 
@@ -61,20 +61,16 @@ export class AssessmentService {
       id: number;
       assessmentType: string;
       name: string;
-      fieldsCount: number;
+      answerType: string;
     }>
   > {
-    const assessments = await this.em.find(
-      Assessment,
-      {},
-      { populate: ['fields'] },
-    );
+    const assessments = await this.em.find(Assessment, {});
 
     return assessments.map((a) => ({
       id: a.id,
       assessmentType: a.assessmentType,
       name: a.name,
-      fieldsCount: a.fields.length,
+      answerType: AssessmentAnswerType[a.answerType],
     }));
   }
 
@@ -88,19 +84,15 @@ export class AssessmentService {
       Array<{
         id: number;
         name: string;
-        fieldsCount: number;
+        answerType: string;
       }>
     >
   > {
-    const assessments = await this.em.find(
-      Assessment,
-      {},
-      { populate: ['fields'] },
-    );
+    const assessments = await this.em.find(Assessment, {});
 
     const grouped: Record<
       string,
-      Array<{ id: number; name: string; fieldsCount: number }>
+      Array<{ id: number; name: string; answerType: string }>
     > = {};
 
     // Initialize all types with empty arrays
@@ -113,7 +105,7 @@ export class AssessmentService {
       grouped[assessment.assessmentType].push({
         id: assessment.id,
         name: assessment.name,
-        fieldsCount: assessment.fields.length,
+        answerType: AssessmentAnswerType[assessment.answerType],
       });
     });
 
@@ -121,24 +113,16 @@ export class AssessmentService {
   }
 
   /**
-   * Get a single assessment with its fields
+   * Get a single assessment
    * GET /assessments/:id
    */
   async getAssessmentById(id: number): Promise<{
     id: number;
     assessmentType: string;
     name: string;
-    fields: Array<{
-      id: number;
-      description: string;
-      answerType: string;
-    }>;
+    answerType: string;
   }> {
-    const assessment = await this.em.findOne(
-      Assessment,
-      { id },
-      { populate: ['fields'] },
-    );
+    const assessment = await this.em.findOne(Assessment, { id });
 
     if (!assessment) {
       throw new NotFoundException(`Assessment with ID ${id} not found`);
@@ -148,11 +132,7 @@ export class AssessmentService {
       id: assessment.id,
       assessmentType: assessment.assessmentType,
       name: assessment.name,
-      fields: assessment.fields.map((f) => ({
-        id: f.id,
-        description: f.description,
-        answerType: AssessmentAnswerType[f.answerType],
-      })),
+      answerType: AssessmentAnswerType[assessment.answerType],
     };
   }
 
@@ -163,7 +143,12 @@ export class AssessmentService {
   async updateAssessment(
     id: number,
     dto: UpdateAssessmentDto,
-  ): Promise<{ id: number; name: string }> {
+  ): Promise<{
+    id: number;
+    name: string;
+    assessmentType?: string;
+    answerType?: string;
+  }> {
     const assessment = await this.em.findOne(Assessment, { id });
 
     if (!assessment) {
@@ -174,16 +159,28 @@ export class AssessmentService {
       assessment.name = dto.name;
     }
 
+    if (dto.answerType !== undefined) {
+      assessment.answerType = dto.answerType;
+    }
+
+    if (dto.assessmentType !== undefined) {
+      assessment.assessmentType = dto.assessmentType;
+    }
+
     await this.em.persistAndFlush(assessment);
 
     return {
       id: assessment.id,
       name: assessment.name,
+      assessmentType: dto.assessmentType,
+      answerType: dto.answerType
+        ? AssessmentAnswerType[assessment.answerType]
+        : undefined,
     };
   }
 
   /**
-   * Delete an assessment (and all its fields)
+   * Delete an assessment
    * DELETE /assessments/:id
    */
   async deleteAssessment(id: number): Promise<{ message: string }> {
@@ -196,147 +193,6 @@ export class AssessmentService {
     await this.em.removeAndFlush(assessment);
 
     return { message: `Assessment ${id} deleted successfully` };
-  }
-
-  // ==================== ADMIN: ASSESSMENT FIELD ENDPOINTS ====================
-
-  /**
-   * Add a single field to an assessment
-   * POST /assessments/:id/fields
-   */
-  async addFieldToAssessment(
-    assessmentId: number,
-    dto: CreateAssessmentFieldDto,
-  ): Promise<{ id: number; description: string; answerType: string }> {
-    const assessment = await this.em.findOne(Assessment, { id: assessmentId });
-
-    if (!assessment) {
-      throw new NotFoundException(
-        `Assessment with ID ${assessmentId} not found`,
-      );
-    }
-
-    const field = this.em.create(AssessmentField, {
-      assessment: assessment,
-      description: dto.description,
-      answerType: dto.answerType,
-    });
-
-    await this.em.persistAndFlush(field);
-
-    return {
-      id: field.id,
-      description: field.description,
-      answerType: AssessmentAnswerType[field.answerType],
-    };
-  }
-
-  /**
-   * Add multiple fields to an assessment at once
-   * POST /assessments/:id/fields/bulk
-   */
-  async addFieldsToAssessment(
-    assessmentId: number,
-    dto: CreateAssessmentFieldsDto,
-  ): Promise<{ ids: number[]; count: number }> {
-    const assessment = await this.em.findOne(Assessment, { id: assessmentId });
-
-    if (!assessment) {
-      throw new NotFoundException(
-        `Assessment with ID ${assessmentId} not found`,
-      );
-    }
-
-    const fields = dto.fields.map((fieldDto) =>
-      this.em.create(AssessmentField, {
-        assessment: assessment,
-        description: fieldDto.description,
-        answerType: fieldDto.answerType,
-      }),
-    );
-
-    await this.em.persistAndFlush(fields);
-
-    return {
-      ids: fields.map((f) => f.id),
-      count: fields.length,
-    };
-  }
-
-  /**
-   * Get all fields for an assessment
-   * GET /assessments/:id/fields
-   */
-  async getAssessmentFields(assessmentId: number): Promise<
-    Array<{
-      id: number;
-      description: string;
-      answerType: string;
-    }>
-  > {
-    const assessment = await this.em.findOne(
-      Assessment,
-      { id: assessmentId },
-      { populate: ['fields'] },
-    );
-
-    if (!assessment) {
-      throw new NotFoundException(
-        `Assessment with ID ${assessmentId} not found`,
-      );
-    }
-
-    return assessment.fields.map((f) => ({
-      id: f.id,
-      description: f.description,
-      answerType: AssessmentAnswerType[f.answerType],
-    }));
-  }
-
-  /**
-   * Update a field
-   * PATCH /assessments/fields/:id
-   */
-  async updateField(
-    fieldId: number,
-    dto: UpdateAssessmentFieldDto,
-  ): Promise<{ id: number; description: string }> {
-    const field = await this.em.findOne(AssessmentField, { id: fieldId });
-
-    if (!field) {
-      throw new NotFoundException(`Field with ID ${fieldId} not found`);
-    }
-
-    if (dto.description !== undefined) {
-      field.description = dto.description;
-    }
-
-    if (dto.answerType !== undefined) {
-      field.answerType = dto.answerType;
-    }
-
-    await this.em.persistAndFlush(field);
-
-    return {
-      id: field.id,
-      description: field.description,
-    };
-  }
-
-  /**
-   * Delete a field
-   * DELETE /assessments/fields/:id
-   */
-  async deleteField(fieldId: number): Promise<{ message: string }> {
-    const field = await this.em.findOne(AssessmentField, { id: fieldId });
-
-    if (!field) {
-      throw new NotFoundException(`Field with ID ${fieldId} not found`);
-    }
-
-    await this.em.removeAndFlush(field);
-
-    return { message: `Field ${fieldId} deleted successfully` };
   }
 
   // ==================== UTILITY METHODS ====================
@@ -358,7 +214,7 @@ export class AssessmentService {
   async assignAssessmentToStartup(
     startupId: number,
     dto: AssignAssessmentDto,
-  ): Promise<{ id: number; assessmentId: number; status: string }> {
+  ): Promise<{ id: number; assessmentId: number }> {
     const startup = await this.em.findOne(Startup, { id: startupId });
     if (!startup) {
       throw new NotFoundException(`Startup with ID ${startupId} not found`);
@@ -388,7 +244,6 @@ export class AssessmentService {
     const startupAssessment = this.em.create(StartupAssessment, {
       startup: startup,
       assessment: assessment,
-      status: AssessmentStatus.Pending,
     });
 
     await this.em.persistAndFlush(startupAssessment);
@@ -396,7 +251,6 @@ export class AssessmentService {
     return {
       id: startupAssessment.id,
       assessmentId: assessment.id,
-      status: AssessmentStatus[startupAssessment.status],
     };
   }
 
@@ -436,54 +290,29 @@ export class AssessmentService {
         continue;
       }
 
-      // Check if there's an existing assignment for the same assessment type
-      const existingWithSameType = await this.em.findOne(
-        StartupAssessment,
-        {
-          startup: startup,
-          assessment: {
-            assessmentType: assessment.assessmentType,
-          },
-        },
-        { populate: ['assessment'] },
-      );
+      // Check if there's an existing assignment for the same assessment
+      const existing = await this.em.findOne(StartupAssessment, {
+        startup: startup,
+        assessment: assessment,
+      });
 
-      if (existingWithSameType) {
-        // If it's the exact same assessment, skip it
-        if (existingWithSameType.assessment.id === assessmentId) {
-          continue;
-        }
-
-        // Replace: remove old assignment and create new one
-        await this.em.removeAndFlush(existingWithSameType);
-
-        const startupAssessment = this.em.create(StartupAssessment, {
-          startup: startup,
-          assessment: assessment,
-          status: AssessmentStatus.Pending,
-        });
-
-        this.em.persist(startupAssessment);
-        replaced++;
-        results.push({
-          assessmentId: assessmentId,
-          status: 'replaced',
-        });
-      } else {
-        // Create new assignment
-        const startupAssessment = this.em.create(StartupAssessment, {
-          startup: startup,
-          assessment: assessment,
-          status: AssessmentStatus.Pending,
-        });
-
-        this.em.persist(startupAssessment);
-        assigned++;
-        results.push({
-          assessmentId: assessmentId,
-          status: 'assigned',
-        });
+      if (existing) {
+        // Already assigned, skip
+        continue;
       }
+
+      // Create new assignment
+      const startupAssessment = this.em.create(StartupAssessment, {
+        startup: startup,
+        assessment: assessment,
+      });
+
+      this.em.persist(startupAssessment);
+      assigned++;
+      results.push({
+        assessmentId: assessmentId,
+        status: 'assigned',
+      });
     }
 
     await this.em.flush();
@@ -506,18 +335,13 @@ export class AssessmentService {
         id: number;
         assessmentType: string;
         name: string;
-      };
-      status: string;
-      fields: Array<{
-        id: number;
-        description: string;
         answerType: string;
-        answer?: {
-          answerValue?: string;
-          fileUrl?: string;
-          fileName?: string;
-        };
-      }>;
+      };
+      answer?: {
+        answerValue?: string;
+        fileUrl?: string;
+        fileName?: string;
+      };
     }>
   > {
     const startup = await this.em.findOne(Startup, { id: startupId });
@@ -528,7 +352,7 @@ export class AssessmentService {
     const startupAssessments = await this.em.find(
       StartupAssessment,
       { startup: startup },
-      { populate: ['assessment', 'assessment.fields'] },
+      { populate: ['assessment'] },
     );
 
     const result: Array<{
@@ -537,46 +361,20 @@ export class AssessmentService {
         id: number;
         assessmentType: string;
         name: string;
-      };
-      status: string;
-      fields: Array<{
-        id: number;
-        description: string;
         answerType: string;
-        answer?: {
-          answerValue?: string;
-          fileUrl?: string;
-          fileName?: string;
-        };
-      }>;
+      };
+      answer?: {
+        answerValue?: string;
+        fileUrl?: string;
+        fileName?: string;
+      };
     }> = [];
 
     for (const sa of startupAssessments) {
-      // Get all responses for this startup and assessment
-      const responses = await this.em.find(StartupResponse, {
+      // Get response for this assessment
+      const response = await this.em.findOne(StartupResponse, {
         startup: startup,
-        assessmentField: {
-          assessment: sa.assessment,
-        },
-      });
-
-      const fields = sa.assessment.fields.map((field) => {
-        const response = responses.find(
-          (r) => r.assessmentField.id === field.id,
-        );
-
-        return {
-          id: field.id,
-          description: field.description,
-          answerType: AssessmentAnswerType[field.answerType],
-          answer: response
-            ? {
-                answerValue: response.answerValue,
-                fileUrl: response.fileUrl,
-                fileName: response.fileName,
-              }
-            : undefined,
-        };
+        assessment: sa.assessment,
       });
 
       result.push({
@@ -585,9 +383,15 @@ export class AssessmentService {
           id: sa.assessment.id,
           assessmentType: sa.assessment.assessmentType,
           name: sa.assessment.name,
+          answerType: AssessmentAnswerType[sa.assessment.answerType],
         },
-        status: AssessmentStatus[sa.status],
-        fields: fields,
+        answer: response
+          ? {
+              answerValue: response.answerValue,
+              fileUrl: response.fileUrl,
+              fileName: response.fileName,
+            }
+          : undefined,
       });
     }
 
@@ -597,7 +401,7 @@ export class AssessmentService {
   // ==================== STARTUP: RESPONSE ENDPOINTS ====================
 
   /**
-   * Submit answer(s) for assessment fields
+   * Submit answer(s) for assessments
    * POST /startups/:id/responses
    */
   async submitResponses(
@@ -613,13 +417,13 @@ export class AssessmentService {
     let updated = 0;
 
     for (const responseDto of dto.responses) {
-      const field = await this.em.findOne(AssessmentField, {
-        id: responseDto.assessmentFieldId,
+      const assessment = await this.em.findOne(Assessment, {
+        id: responseDto.assessmentId,
       });
 
-      if (!field) {
+      if (!assessment) {
         console.warn(
-          `Assessment field ${responseDto.assessmentFieldId} not found, skipping`,
+          `Assessment ${responseDto.assessmentId} not found, skipping`,
         );
         continue;
       }
@@ -627,7 +431,7 @@ export class AssessmentService {
       // Check if response already exists
       const existingResponse = await this.em.findOne(StartupResponse, {
         startup: startup,
-        assessmentField: field,
+        assessment: assessment,
       });
 
       if (existingResponse) {
@@ -641,7 +445,7 @@ export class AssessmentService {
         // Create new response
         const newResponse = this.em.create(StartupResponse, {
           startup: startup,
-          assessmentField: field,
+          assessment: assessment,
           answerValue: responseDto.answerValue,
           fileUrl: responseDto.fileUrl,
           fileName: responseDto.fileName,
@@ -663,90 +467,41 @@ export class AssessmentService {
   async getAssessmentResponses(
     startupId: number,
     assessmentId: number,
-  ): Promise<
-    Array<{
-      fieldId: number;
-      description: string;
-      answerType: string;
-      answerValue?: string;
-      fileUrl?: string;
-      fileName?: string;
-      submittedAt?: Date;
-    }>
-  > {
-    const startup = await this.em.findOne(Startup, { id: startupId });
-    if (!startup) {
-      throw new NotFoundException(`Startup with ID ${startupId} not found`);
-    }
-
-    const assessment = await this.em.findOne(
-      Assessment,
-      { id: assessmentId },
-      { populate: ['fields'] },
-    );
-
-    if (!assessment) {
-      throw new NotFoundException(
-        `Assessment with ID ${assessmentId} not found`,
-      );
-    }
-
-    const responses = await this.em.find(StartupResponse, {
-      startup: startup,
-      assessmentField: {
-        assessment: assessment,
-      },
-    });
-
-    return assessment.fields.map((field) => {
-      const response = responses.find((r) => r.assessmentField.id === field.id);
-
-      return {
-        fieldId: field.id,
-        description: field.description,
-        answerType: AssessmentAnswerType[field.answerType],
-        answerValue: response?.answerValue,
-        fileUrl: response?.fileUrl,
-        fileName: response?.fileName,
-      };
-    });
-  }
-
-  /**
-   * Mark assessment as complete
-   * PATCH /startups/:id/assessments/:assessmentId/complete
-   */
-  async markAssessmentComplete(
-    startupId: number,
-    assessmentId: number,
-  ): Promise<{ message: string }> {
+  ): Promise<{
+    id: number;
+    name: string;
+    assessmentType: string;
+    answerType: string;
+    answerValue?: string;
+    fileUrl?: string;
+    fileName?: string;
+  }> {
     const startup = await this.em.findOne(Startup, { id: startupId });
     if (!startup) {
       throw new NotFoundException(`Startup with ID ${startupId} not found`);
     }
 
     const assessment = await this.em.findOne(Assessment, { id: assessmentId });
+
     if (!assessment) {
       throw new NotFoundException(
         `Assessment with ID ${assessmentId} not found`,
       );
     }
 
-    const startupAssessment = await this.em.findOne(StartupAssessment, {
+    const response = await this.em.findOne(StartupResponse, {
       startup: startup,
       assessment: assessment,
     });
 
-    if (!startupAssessment) {
-      throw new NotFoundException('Assessment not assigned to this startup');
-    }
-
-    startupAssessment.status = AssessmentStatus.Completed;
-
-    await this.em.persistAndFlush(startupAssessment);
-
     return {
-      message: 'Assessment marked as complete',
+      id: assessment.id,
+      name: assessment.name,
+      assessmentType: assessment.assessmentType,
+      answerType: AssessmentAnswerType[assessment.answerType],
+      answerValue: response?.answerValue,
+      fileUrl: response?.fileUrl,
+      fileName: response?.fileName,
     };
   }
 }

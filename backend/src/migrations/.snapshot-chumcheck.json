@@ -111,6 +111,15 @@
           "nullable": false,
           "length": 255,
           "mappedType": "string"
+        },
+        "answer_type": {
+          "name": "answer_type",
+          "type": "smallint",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "enum"
         }
       },
       "name": "assessments",
@@ -129,78 +138,6 @@
       ],
       "checks": [],
       "foreignKeys": {},
-      "nativeEnums": {}
-    },
-    {
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "unsigned": false,
-          "autoincrement": true,
-          "primary": true,
-          "nullable": false,
-          "mappedType": "integer"
-        },
-        "assessment_id": {
-          "name": "assessment_id",
-          "type": "int",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "integer"
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "text"
-        },
-        "answer_type": {
-          "name": "answer_type",
-          "type": "smallint",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "enum"
-        }
-      },
-      "name": "assessment_fields",
-      "schema": "public",
-      "indexes": [
-        {
-          "keyName": "assessment_fields_pkey",
-          "columnNames": [
-            "id"
-          ],
-          "composite": false,
-          "constraint": true,
-          "primary": true,
-          "unique": true
-        }
-      ],
-      "checks": [],
-      "foreignKeys": {
-        "assessment_fields_assessment_id_foreign": {
-          "constraintName": "assessment_fields_assessment_id_foreign",
-          "columnNames": [
-            "assessment_id"
-          ],
-          "localTableName": "public.assessment_fields",
-          "referencedColumnNames": [
-            "id"
-          ],
-          "referencedTableName": "public.assessments",
-          "createForeignKeyConstraint": true,
-          "deleteRule": "cascade",
-          "updateRule": "cascade"
-        }
-      },
       "nativeEnums": {}
     },
     {
@@ -1353,8 +1290,8 @@
           "nullable": false,
           "mappedType": "integer"
         },
-        "assessment_field_id": {
-          "name": "assessment_field_id",
+        "assessment_id": {
+          "name": "assessment_id",
           "type": "int",
           "unsigned": false,
           "autoincrement": false,
@@ -1422,16 +1359,16 @@
           "deleteRule": "cascade",
           "updateRule": "cascade"
         },
-        "startup_responses_assessment_field_id_foreign": {
-          "constraintName": "startup_responses_assessment_field_id_foreign",
+        "startup_responses_assessment_id_foreign": {
+          "constraintName": "startup_responses_assessment_id_foreign",
           "columnNames": [
-            "assessment_field_id"
+            "assessment_id"
           ],
           "localTableName": "public.startup_responses",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.assessment_fields",
+          "referencedTableName": "public.assessments",
           "createForeignKeyConstraint": true,
           "deleteRule": "cascade",
           "updateRule": "cascade"
@@ -1697,15 +1634,6 @@
           "primary": false,
           "nullable": false,
           "mappedType": "integer"
-        },
-        "status": {
-          "name": "status",
-          "type": "smallint",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "enum"
         }
       },
       "name": "startup_assessments",

@@ -5,7 +5,7 @@ import { redirect, fail } from '@sveltejs/kit';
 type AssessmentItem = {
   id: number;
   name: string;
-  fieldsCount: number;
+  answerType: number;
 };
 
 export const load: PageServerLoad = async ({ cookies, fetch, url }) => {

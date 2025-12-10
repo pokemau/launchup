@@ -313,7 +313,6 @@
 {:else}
   {@const mentors = $queries[1].data}
   {@const assessments = $queries[2].data}
-  {console.log(assessments)}
   <div class="flex flex-col gap-3">
     <div class="flex justify-between rounded-lg bg-background">
       <Tabs.Root value={selectedTab}>
