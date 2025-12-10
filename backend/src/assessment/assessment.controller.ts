@@ -43,6 +43,27 @@ export class AssessmentController {
     return this.assessmentService.listTypes();
   }
 
+  @Get('startup/:id')
+  async getStartupAssessments(@Param('id', ParseIntPipe) startupId: number) {
+    return this.assessmentService.getStartupAssessments(startupId);
+  }
+
+  @Post('startup-assessment/:id')
+  async assignAssessmentsToStartup(@Param('id', ParseIntPipe) id: number) {
+    return await this.assessmentService.assignAssessmentsToStartup(id);
+  }
+
+  @Patch('startup-assessment/:id/toggle-applicable')
+  async toggleAssessmentApplicability(
+    @Param('id', ParseIntPipe) startupAssessmentId: number,
+    @Body() dto: { isApplicable: boolean },
+  ) {
+    return this.assessmentService.toggleAssessmentApplicability(
+      startupAssessmentId,
+      dto.isApplicable,
+    );
+  }
+
   @Get(':id')
   async getAssessmentById(@Param('id', ParseIntPipe) id: number) {
     return this.assessmentService.getAssessmentById(id);
@@ -61,15 +82,5 @@ export class AssessmentController {
   @Delete(':id')
   async deleteAssessment(@Param('id', ParseIntPipe) id: number) {
     return this.assessmentService.deleteAssessment(id);
-  }
-
-  @Post('startup-assessment/:id')
-  async assignAssessmentsToStartup(@Param('id', ParseIntPipe) id: number) {
-    return await this.assessmentService.assignAssessmentsToStartup(id);
-  }
-
-  @Get('startup/:id')
-  async getStartupAssessments(@Param('id', ParseIntPipe) startupId: number) {
-    return this.assessmentService.getStartupAssessments(startupId);
   }
 }

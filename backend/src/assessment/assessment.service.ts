@@ -242,6 +242,7 @@ export class AssessmentService {
     const startupAssessment = this.em.create(StartupAssessment, {
       startup: startup,
       assessment: assessment,
+      isApplicable: true,
     });
 
     await this.em.persistAndFlush(startupAssessment);
@@ -280,6 +281,7 @@ export class AssessmentService {
         const startupAssessment = this.em.create(StartupAssessment, {
           startup,
           assessment,
+          isApplicable: true,
         });
         newAssignments.push(startupAssessment);
       }
@@ -307,11 +309,14 @@ export class AssessmentService {
         name: string;
         answerType: string;
       };
-      answer?: {
+      response?: {
+        id: number;
         answerValue?: string;
         fileUrl?: string;
         fileName?: string;
       };
+      status: 'Completed' | 'Pending';
+      isApplicable: boolean;
     }>
   > {
     const startup = await this.em.findOne(Startup, { id: startupId });
@@ -325,29 +330,15 @@ export class AssessmentService {
       { populate: ['assessment'] },
     );
 
-    const result: Array<{
-      id: number;
-      assessment: {
-        id: number;
-        assessmentType: string;
-        name: string;
-        answerType: string;
-      };
-      answer?: {
-        answerValue?: string;
-        fileUrl?: string;
-        fileName?: string;
-      };
-    }> = [];
+    const responses = await this.em.find(StartupResponse, {
+      startup: startup,
+    });
+    const responseMap = new Map(responses.map((r) => [r.assessment.id, r]));
 
-    for (const sa of startupAssessments) {
-      // Get response for this assessment
-      const response = await this.em.findOne(StartupResponse, {
-        startup: startup,
-        assessment: sa.assessment,
-      });
+    return startupAssessments.map((sa) => {
+      const response = responseMap.get(sa.assessment.id);
 
-      result.push({
+      return {
         id: sa.id,
         assessment: {
           id: sa.assessment.id,
@@ -355,17 +346,42 @@ export class AssessmentService {
           name: sa.assessment.name,
           answerType: AssessmentAnswerType[sa.assessment.answerType],
         },
-        answer: response
+        response: response
           ? {
+              id: response.id,
               answerValue: response.answerValue,
               fileUrl: response.fileUrl,
               fileName: response.fileName,
             }
           : undefined,
-      });
-    }
+        status: response ? 'Completed' : 'Pending',
+        isApplicable: sa.isApplicable,
+      };
+    });
+  }
 
-    return result;
+  /**
+   * Toggle whether an assessment is applicable to a startup
+   * PATCH /assessments/startup-assessment/:id/toggle-applicable
+   */
+  async toggleAssessmentApplicability(
+    startupAssessmentId: number,
+    isApplicable: boolean,
+  ): Promise<{ message: string; isApplicable: boolean }> {
+    const startupAssessment = await this.em.findOne(StartupAssessment, {
+      id: startupAssessmentId,
+    });
+    if (!startupAssessment) {
+      throw new NotFoundException(
+        `StartupAssessment with ID ${startupAssessmentId} not found`,
+      );
+    }
+    startupAssessment.isApplicable = isApplicable;
+    await this.em.persistAndFlush(startupAssessment);
+    return {
+      message: `Assessment marked as ${isApplicable ? 'applicable' : 'not applicable'}`,
+      isApplicable: startupAssessment.isApplicable,
+    };
   }
 
   // ==================== STARTUP: RESPONSE ENDPOINTS ====================

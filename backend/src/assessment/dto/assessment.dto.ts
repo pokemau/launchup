@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsEnum,
   IsArray,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AssessmentType } from '../../entities/enums/assessment-type.enum';
@@ -16,6 +17,11 @@ export class SubmitAnswerDto {
 
   @IsString()
   answerValue: string; // Changed from 'answer' to match frontend payload
+}
+
+export class ToggleApplicabilityDto {
+  @IsBoolean()
+  isApplicable!: boolean;
 }
 
 export class SubmitAssessmentDto {

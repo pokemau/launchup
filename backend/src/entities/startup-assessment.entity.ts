@@ -1,4 +1,4 @@
-import { Entity, PrimaryKey, ManyToOne } from '@mikro-orm/core';
+import { Entity, PrimaryKey, ManyToOne, Property } from '@mikro-orm/core';
 import { Startup } from './startup.entity';
 import { Assessment } from './assessment.entity';
 
@@ -12,4 +12,7 @@ export class StartupAssessment {
 
   @ManyToOne(() => Assessment, { deleteRule: 'cascade' })
   assessment!: Assessment;
+
+  @Property({ default: true })
+  isApplicable!: boolean;
 }
