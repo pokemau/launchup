@@ -16,6 +16,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:5173',
       'https://launchup.onrender.com',
+      'https://launchup.vercel.app',
       // 'http://localhost:5173',
       // 'http://127.0.0.1:5173',
     ],
