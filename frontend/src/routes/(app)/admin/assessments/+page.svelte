@@ -144,6 +144,32 @@
     await refreshAssessments();
   }
 
+  async function createAssessment() {
+    if (!createName.trim()) return;
+    const res = await fetch(`${PUBLIC_API_URL}/assessments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${data.access}`
+      },
+      body: JSON.stringify({
+        name: createName.trim(),
+        assessmentType: selectedAssessmentType.trim(),
+        answerType: Number(selectedFieldType)
+      })
+    });
+    if (!res.ok) {
+      console.error('Create assessment failed', res.status, await res.text());
+      alert(`Create assessment failed (${res.status}). Check backend logs.`);
+      return;
+    }
+    createName = '';
+    selectedAssessmentType = 'Technology';
+    selectedFieldType = '1';
+    showCreateTypeModal = false;
+    await refreshAssessments();
+  }
+
   async function deleteAssessment() {
     if (!editingField?.id) return;
     const res = await fetch(
