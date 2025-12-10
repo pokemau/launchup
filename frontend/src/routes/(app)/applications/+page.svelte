@@ -61,24 +61,12 @@
     }
   }
 
-  // Assign multiple assessments to a startup
-  async function assignAssessmentsToStartup(
-    startupId: number,
-    assessmentTypeIds: number[]
-  ) {
+  async function assignAssessmentsToStartup(startupId: number) {
     try {
-      // Send all assessmentTypeIds in a single request as required by backend
       const response = await axiosInstance.post(
-        `/assessments/startup-assessment`,
-        {
-          startupId,
-          assessmentTypeIds
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${access}`
-          }
-        }
+        `/assessments/startup-assessment/${startupId}`,
+        {},
+        { headers: { Authorization: `Bearer ${access}` } }
       );
       return response.data;
     } catch (error) {

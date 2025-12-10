@@ -1634,6 +1634,16 @@
           "primary": false,
           "nullable": false,
           "mappedType": "integer"
+        },
+        "is_applicable": {
+          "name": "is_applicable",
+          "type": "boolean",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "true",
+          "mappedType": "boolean"
         }
       },
       "name": "startup_assessments",

@@ -18,34 +18,27 @@
     showAssessmentForm = !showAssessmentForm;
   }
 
-  async function handleAssessmentSubmit(
-    event: CustomEvent<{
-      assessmentName: string;
-      startupId: string;
-      formData: Record<string, any>;
-    }>
-  ): Promise<void> {
-    const { assessmentName, startupId, formData } = event.detail;
+  async function handleAssessmentSubmit(detail: {
+    assessmentId: number;
+    startupId: string;
+    answer?: string;
+    fileUrl?: string;
+    fileName?: string;
+  }): Promise<void> {
+    const { assessmentId, startupId, answer, fileUrl, fileName } = detail;
 
     try {
-      const assessmentData = $assessmentQuery.data?.find(
-        (a: any) => a.assessment.name === assessmentName
-      );
-
-      if (!assessmentData) {
-        throw new Error('Assessment type not found');
-      }
-
-      // Map formData to responses array using fields from the new structure
-      const responses = assessmentData.fields.map((field: any) => ({
-        assessmentFieldId: field.id,
-        answerValue: formData[field.id] || ''
-      }));
-
       await axiosInstance.post(
         `/startups/${startupId}/responses`,
         {
-          responses
+          responses: [
+            {
+              assessmentId: assessmentId,
+              answerValue: answer || '',
+              fileUrl: fileUrl || '',
+              fileName: fileName || ''
+            }
+          ]
         },
         {
           headers: {
@@ -97,37 +90,22 @@
   let selectedAssessment = $state<any | null>(null);
 
   function openAssessment(assessmentData: any): void {
-    const transformedAssessment = {
-      id: assessmentData.assessment.id,
-      assessmentType: assessmentData.assessment.assessmentType,
-      name: assessmentData.assessment.name,
-      assessmentStatus: assessmentData.status,
-      assessmentFields: assessmentData.fields.map((field: any) => ({
-        id: field.id.toString(),
-        description: field.description,
-        type:
-          field.answerType === 'ShortAnswer'
-            ? 'ShortAnswer'
-            : field.answerType === 'LongAnswer'
-              ? 'LongAnswer'
-              : field.answerType === 'File'
-                ? 'File'
-                : 'ShortAnswer',
-        answer: field.answer?.answerValue || '',
-        fileUrl: field.answer?.fileUrl || '',
-        fileName: field.answer?.fileName || ''
-      }))
-    };
-    selectedAssessment = transformedAssessment;
+    selectedAssessment = assessmentData;
     toggleAssessmentForm();
   }
 
-  // Filter assessments based on role
-  const displayedAssessments = $derived(() =>
-    data.role === 'Mentor'
-      ? $assessmentQuery.data?.filter((a: any) => a.status === 'Completed')
-      : $assessmentQuery.data
-  );
+const displayedAssessments = $derived(() => {
+  let filtered = $assessmentQuery.data;
+
+  return filtered?.sort((a: any, b: any) => {
+    const getPriority = (assessment: any) => {
+      if (!assessment.isApplicable) return 3;
+      if (assessment.status === 'Pending') return 1;
+      return 2;
+    };
+    return getPriority(a) - getPriority(b);
+  }) || [];
+});
 </script>
 
 {#if isLoading}
@@ -154,13 +132,17 @@
   {/if}
   <h2 class="mt-6 text-xl font-bold">Required Assessments</h2>
 
-  {#each $assessmentQuery.data as assessmentData}
+  {#each displayedAssessments() as assessmentData}
     <ReadinessAssessmentCard
       name={assessmentData.assessment.name}
       assessmentStatus={assessmentData.status}
       assessmentType={assessmentData.assessment.assessmentType}
       buttonProps={{ onclick: () => openAssessment(assessmentData) }}
       isReadOnly={data.role === 'Mentor'}
+      isApplicable={assessmentData.isApplicable}
+      startupAssessmentId={assessmentData.id}
+      {access}
+      ontoggle={() => $assessmentQuery.refetch()}
     />
   {/each}
 
@@ -171,9 +153,9 @@
           {access}
           {startupId}
           assessment={selectedAssessment}
-          on:close={toggleAssessmentForm}
-          on:submit={handleAssessmentSubmit}
-          on:statusChanged={() => $assessmentQuery.refetch()}
+          onclose={toggleAssessmentForm}
+          onsubmit={handleAssessmentSubmit}
+          onstatusChanged={() => $assessmentQuery.refetch()}
           isMentor={data.role === 'Mentor'}
         />
       {/if}

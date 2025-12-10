@@ -44,7 +44,6 @@
   }> = [];
   export let assignAssessmentsToStartup: (
     startupId: number,
-    assessmentTypeIds: number[]
   ) => Promise<any>;
   export let refetchStartupAssessments:
     | ((startupId: number) => Promise<void>)
@@ -102,7 +101,6 @@
     fields: sa.fields
   }));
 
-  // Helper function to get status badge color
   function getStatusColor(status: string): string {
     switch (status.toLowerCase()) {
       case 'completed':
@@ -113,6 +111,25 @@
         return 'bg-blue-100 border-blue-300 text-blue-800';
       default:
         return 'bg-secondary/10 border-border text-foreground';
+    }
+  }
+
+  function getAssessmentTypeColor(assessmentType: string): string {
+    switch (assessmentType.toLowerCase()) {
+      case 'technology':
+        return 'bg-blue-100 border-blue-300 text-blue-800';
+      case 'market':
+        return 'bg-green-100 border-green-300 text-green-800';
+      case 'organizational':
+        return 'bg-purple-100 border-purple-300 text-purple-800';
+      case 'investment':
+        return 'bg-orange-100 border-orange-300 text-orange-800';
+      case 'regulatory':
+        return 'bg-red-100 border-red-300 text-red-800';
+      case 'acceptance':
+        return 'bg-pink-100 border-pink-300 text-pink-800';
+      default:
+        return 'bg-gray-100 border-gray-300 text-gray-800';
     }
   }
 
@@ -190,10 +207,7 @@
     try {
       await assignAssessmentsToStartup(
         startup.id,
-        Array.from(selectedAssessments)
       );
-
-      // Refetch startup assessments if function is provided
       if (refetchStartupAssessments) {
         await refetchStartupAssessments(startup.id);
       }
@@ -251,116 +265,7 @@
           </p>
         </div>
 
-        <!-- Assessments and Mentor Section -->
         <div class="mb-8">
-          <!-- Assigned Assessments -->
-          <div class="mb-6">
-            <div class="mb-2 flex items-center justify-between">
-              <h3 class="text-lg font-medium">Assigned Assessments</h3>
-              {#if !showEditAssessments}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onclick={() => (showEditAssessments = true)}
-                  class="gap-2"
-                >
-                  <Edit2 class="h-3.5 w-3.5" />
-                  Edit
-                </Button>
-              {/if}
-            </div>
-
-            {#if showEditAssessments}
-              <!-- Edit Mode - Radio Selection Grouped by Type -->
-              <p class="mb-4 text-sm text-muted-foreground">
-                Select one assessment per type for this startup to complete
-              </p>
-              {#if flatAssessments && flatAssessments.length > 0}
-                <div class="mb-4 space-y-4">
-                  {#each Object.entries(groupedAssessments) as [type, typeAssessments]}
-                    <div class="space-y-2">
-                      <h4 class="text-sm font-semibold text-foreground">
-                        {type}
-                      </h4>
-                      <div class="space-y-2">
-                        {#each typeAssessments as asmt (asmt.id)}
-                          <Card.Root class="bg-secondary/10 border">
-                            <div class="flex items-center justify-between p-3">
-                              <label
-                                class="flex cursor-pointer select-none items-center gap-3"
-                              >
-                                <input
-                                  type="radio"
-                                  name="assessment-{type}"
-                                  class="h-4 w-4 accent-primary"
-                                  checked={selectedAssessments.has(asmt.id)}
-                                  on:change={() =>
-                                    toggleAssessment(asmt.id, type)}
-                                />
-                                <span class="font-medium text-foreground"
-                                  >{asmt.name}</span
-                                >
-                              </label>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onclick={() => openPreview(asmt)}
-                                class="shrink-0"
-                              >
-                                View Details
-                              </Button>
-                            </div>
-                          </Card.Root>
-                        {/each}
-                      </div>
-                    </div>
-                  {/each}
-                </div>
-              {:else}
-                <p class="mb-4 text-sm text-muted-foreground">
-                  No assessments available.
-                </p>
-              {/if}
-
-              <!-- Action buttons for edit mode -->
-              <div class="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onclick={cancelEditAssessments}
-                  disabled={isLoadingAssessments}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onclick={handleSaveAssessments}
-                  disabled={selectedAssessments.size === 0 ||
-                    isLoadingAssessments}
-                >
-                  {isLoadingAssessments ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            {:else}
-              <!-- Read-only view -->
-              {#if displayAssessments.length === 0}
-                <p class="text-sm text-muted-foreground">
-                  No assessments assigned.
-                </p>
-              {:else}
-                <div class="flex flex-wrap gap-2">
-                  {#each displayAssessments as a}
-                    <span
-                      class="rounded-full border px-3 py-1 text-sm font-medium {getStatusColor(a.status)}"
-                    >
-                      {a.name} ({a.assessmentType})
-                    </span>
-                  {/each}
-                </div>
-              {/if}
-            {/if}
-          </div>
-
           <!-- Assigned Mentor Section -->
           <div class="space-y-2">
             <h3 class="text-lg font-medium">Assigned Mentor</h3>

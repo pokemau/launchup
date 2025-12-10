@@ -25,7 +25,6 @@
   export let onApprove: (startupId: number, mentorId: any) => Promise<void>;
   export let assignAssessmentsToStartup: (
     startupId: number,
-    assessmentTypeIds: number[]
   ) => Promise<any>;
   export let access: string;
 
@@ -89,8 +88,7 @@
   }
 
   async function handleApprove() {
-    if (!selectedMentor || selectedAssessments.size === 0) {
-      // Not yet added a default SELECTED ASSESSMENT
+    if (!selectedMentor) {
       toast.error(
         'Please select at least one readiness level assessment and assign a mentor.'
       );
@@ -98,10 +96,7 @@
     }
     isLoading = true;
     try {
-      await assignAssessmentsToStartup(
-        startup.id,
-        Array.from(selectedAssessments)
-      );
+      await assignAssessmentsToStartup(startup.id);
       await onApprove(startup.id, selectedMentor);
       toast.success('Startup has been approved successfully');
       toggleDialog();
@@ -125,123 +120,63 @@
 
       <!-- Dialog Content -->
       <div class="space-y-6">
-        <!-- Readiness Level Forms Selection -->
         <div>
-          <h3 class="mb-4 text-lg font-medium">
-            Additional Readiness Level Assessments
-          </h3>
-          <p class="mb-4 text-sm text-muted-foreground">
-            Select at least one readiness level form for the applicants to fill
-            up
-          </p>
-          {#if assessments && assessments.length > 0}
-            <div class="space-y-4">
-              {#each Object.entries(groupedAssessments) as [type, typeAssessments]}
-                <div class="space-y-2">
-                  <h4 class="text-sm font-semibold text-foreground">
-                    {type}
-                  </h4>
-                  <div class="space-y-2">
-                    {#each typeAssessments as asmt (asmt.id)}
-                      <Card.Root class="bg-secondary/10 border">
-                        <div class="flex items-center justify-between p-3">
-                          <label
-                            class="flex cursor-pointer select-none items-center gap-3"
-                          >
-                            <input
-                              type="radio"
-                              name="assessment-{type}"
-                              class="h-4 w-4 accent-primary"
-                              checked={selectedAssessments.has(asmt.id)}
-                              on:change={() => toggleAssessment(asmt.id, type)}
-                            />
-                            <span class="font-medium text-foreground"
-                              >{asmt.name}</span
-                            >
-                          </label>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onclick={() => openPreview(asmt)}
-                            class="shrink-0"
-                          >
-                            View Details
-                          </Button>
-                        </div>
-                      </Card.Root>
-                    {/each}
-                  </div>
-                </div>
-              {/each}
-            </div>
-          {:else}
-            <div class="space-y-3">
-              <p class="text-sm text-muted-foreground">
-                No forms for startup to answer...
-              </p>
-            </div>
-          {/if}
+          <!-- Mentor Selection -->
+          <div>
+            <h3 class="mb-4 text-lg font-medium">Assign a Mentor</h3>
+            <Select.Root type="single" bind:value={selectedMentor}>
+              <Select.Trigger class="w-full">
+                {#if mentors && mentors.length > 0 && selectedMentor}
+                  {mentors.find((m) => m.id === Number(selectedMentor))
+                    ?.firstName}
+                  {mentors.find((m) => m.id === Number(selectedMentor))
+                    ?.lastName}
+                {:else}
+                  Select Mentor
+                {/if}
+              </Select.Trigger>
+              <Select.Content>
+                {#each mentors as mentor}
+                  <Select.Item value={String(mentor.id)}>
+                    {mentor.firstName}
+                    {mentor.lastName}
+                  </Select.Item>
+                {/each}
+              </Select.Content>
+            </Select.Root>
+          </div>
         </div>
 
-        <!-- Mentor Selection -->
-        <div>
-          <h3 class="mb-4 text-lg font-medium">Assign a Mentor</h3>
-          <Select.Root type="single" bind:value={selectedMentor}>
-            <Select.Trigger class="w-full">
-              {#if mentors && mentors.length > 0 && selectedMentor}
-                {mentors.find((m) => m.id === Number(selectedMentor))
-                  ?.firstName}
-                {mentors.find((m) => m.id === Number(selectedMentor))?.lastName}
-              {:else}
-                Select Mentor
-              {/if}
-            </Select.Trigger>
-            <Select.Content>
-              {#each mentors as mentor}
-                <Select.Item value={String(mentor.id)}>
-                  {mentor.firstName}
-                  {mentor.lastName}
-                </Select.Item>
-              {/each}
-            </Select.Content>
-          </Select.Root>
+        <!-- Actions -->
+        <div class="flex justify-end gap-3 pt-0">
+          <Button
+            variant="outline"
+            class="transition-transform duration-200 hover:scale-105"
+            disabled={isLoading}
+            onclick={toggleDialog}
+          >
+            Cancel
+          </Button>
+          <Button
+            class="transition-transform duration-200 hover:scale-105"
+            disabled={!selectedMentor || isLoading}
+            onclick={handleApprove}
+          >
+            {isLoading ? 'Approving...' : 'Approve'}
+          </Button>
         </div>
-      </div>
 
-      <!-- Actions -->
-      <div class="flex justify-end gap-3 pt-0">
-        <Button
-          variant="outline"
-          class="transition-transform duration-200 hover:scale-105"
-          disabled={isLoading}
-          onclick={toggleDialog}
-        >
-          Cancel
-        </Button>
-        <Button
-          class="transition-transform duration-200 hover:scale-105"
-          disabled={!selectedMentor ||
-            selectedAssessments.size === 0 ||
-            isLoading}
-          onclick={handleApprove}
-        >
-          {isLoading ? 'Approving...' : 'Approve'}
-        </Button>
-      </div>
+        {#if !selectedMentor}
+          <p class="mt-4 text-sm text-red-500">Please assign a mentor.</p>
+        {/if}
 
-      {#if !selectedMentor || selectedAssessments.size === 0}
-        <p class="mt-4 text-sm text-red-500">
-          Please select at least one readiness level assessment and assign a
-          mentor.
-        </p>
-      {/if}
-
-      <AssessmentPreviewDialog
-        open={previewOpen}
-        onOpenChange={closePreview}
-        assessment={previewAssessment}
-        {access}
-      />
-    </Dialog.Content>
+        <AssessmentPreviewDialog
+          open={previewOpen}
+          onOpenChange={closePreview}
+          assessment={previewAssessment}
+          {access}
+        />
+      </div></Dialog.Content
+    >
   </Dialog.Root>
 {/if}
