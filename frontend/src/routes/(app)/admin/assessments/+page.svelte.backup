@@ -20,8 +20,6 @@
 
   const { data, form } = $props();
 
-  console.log(data.assessments);
-
   const FIELD_TYPES = [
     { value: 0, label: 'Short Answer', icon: Type },
     { value: 1, label: 'Long Answer', icon: FileText },
