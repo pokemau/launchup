@@ -17,6 +17,7 @@ import { StartupResponse } from '../entities/startup-response.entity';
 import { Startup } from '../entities/startup.entity';
 import { AssessmentType } from '../entities/enums/assessment-type.enum';
 import { AssessmentAnswerType } from '../entities/enums/assessment-util.enum';
+import { QualificationStatus } from '../entities/enums/qualification-status.enum';
 
 @Injectable()
 export class AssessmentService {
@@ -32,20 +33,38 @@ export class AssessmentService {
     id: number;
     assessmentType: string;
     name: string;
+    description?: string;
     answerType: string;
   }> {
     const assessment = this.em.create(Assessment, {
       assessmentType: dto.assessmentType,
       name: dto.name,
+      description: dto.description,
       answerType: dto.answerType,
     });
 
     await this.em.persistAndFlush(assessment);
 
+    const qualifiedStartups = await this.em.find(Startup, {
+      qualificationStatus: QualificationStatus.QUALIFIED,
+    });
+
+    for (const startup of qualifiedStartups) {
+      const startupAssessment = this.em.create(StartupAssessment, {
+        startup: startup,
+        assessment: assessment,
+        isApplicable: true,
+      });
+      this.em.persist(startupAssessment);
+    }
+
+    await this.em.flush();
+
     return {
       id: assessment.id,
       assessmentType: assessment.assessmentType,
       name: assessment.name,
+      description: assessment.description,
       answerType: AssessmentAnswerType[assessment.answerType],
     };
   }
@@ -59,6 +78,7 @@ export class AssessmentService {
       id: number;
       assessmentType: string;
       name: string;
+      description?: string;
       answerType: string;
     }>
   > {
@@ -68,6 +88,7 @@ export class AssessmentService {
       id: a.id,
       assessmentType: a.assessmentType,
       name: a.name,
+      description: a.description,
       answerType: AssessmentAnswerType[a.answerType],
     }));
   }
@@ -82,6 +103,7 @@ export class AssessmentService {
       Array<{
         id: number;
         name: string;
+        description?: string;
         answerType: string;
       }>
     >
@@ -90,7 +112,7 @@ export class AssessmentService {
 
     const grouped: Record<
       string,
-      Array<{ id: number; name: string; answerType: string }>
+      Array<{ id: number; name: string; description?: string; answerType: string }>
     > = {};
 
     // Initialize all types with empty arrays
@@ -103,6 +125,7 @@ export class AssessmentService {
       grouped[assessment.assessmentType].push({
         id: assessment.id,
         name: assessment.name,
+        description: assessment.description,
         answerType: AssessmentAnswerType[assessment.answerType],
       });
     });
@@ -118,6 +141,7 @@ export class AssessmentService {
     id: number;
     assessmentType: string;
     name: string;
+    description?: string;
     answerType: string;
   }> {
     const assessment = await this.em.findOne(Assessment, { id });
@@ -130,6 +154,7 @@ export class AssessmentService {
       id: assessment.id,
       assessmentType: assessment.assessmentType,
       name: assessment.name,
+      description: assessment.description,
       answerType: AssessmentAnswerType[assessment.answerType],
     };
   }
@@ -144,6 +169,7 @@ export class AssessmentService {
   ): Promise<{
     id: number;
     name: string;
+    description?: string;
     assessmentType?: string;
     answerType?: string;
   }> {
@@ -155,6 +181,10 @@ export class AssessmentService {
 
     if (dto.name !== undefined) {
       assessment.name = dto.name;
+    }
+
+    if (dto.description !== undefined) {
+      assessment.description = dto.description;
     }
 
     if (dto.answerType !== undefined) {
@@ -170,6 +200,7 @@ export class AssessmentService {
     return {
       id: assessment.id,
       name: assessment.name,
+      description: assessment.description,
       assessmentType: dto.assessmentType,
       answerType: dto.answerType
         ? AssessmentAnswerType[assessment.answerType]

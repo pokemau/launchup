@@ -5,6 +5,7 @@
   import { Label } from '$lib/components/ui/label';
   import * as Select from '$lib/components/ui/select';
   import { Badge } from '$lib/components/ui/badge';
+  import { Textarea } from '$lib/components/ui/textarea';
   import {
     Plus,
     Edit2,
@@ -41,13 +42,19 @@
   // Create assessment state
   let showCreateTypeModal = $state(false);
   let createName = $state('');
+  let createDescription = $state('');
   let selectedAssessmentType = $state('Technology');
   let selectedFieldType = $state('1');
 
   // Field edit state
   let showFieldEditModal = $state(false);
-  /** @type {{ name: string; answerType: string; assessmentType: string; id?: number }} */
-  let editingField = $state({ name: '', answerType: '1', assessmentType: 'Technology' });
+  /** @type {{ name: string; description?: string; answerType: string; assessmentType: string; id?: number }} */
+  let editingField = $state({
+    name: '',
+    description: '',
+    answerType: '1',
+    assessmentType: 'Technology'
+  });
 
   /** @type {Set<string>} */
   let expandedTypes = $state(new Set());
@@ -100,11 +107,17 @@
       editingField = {
         id: assessment.id,
         name: assessment.name,
+        description: assessment.description || '',
         answerType: String(answerTypeValue),
         assessmentType: assessment.assessmentType || 'Technology'
       };
     } else {
-      editingField = { name: '', answerType: '1', assessmentType: 'Technology' };
+      editingField = {
+        name: '',
+        description: '',
+        answerType: '1',
+        assessmentType: 'Technology'
+      };
     }
     showFieldEditModal = true;
   }
@@ -114,6 +127,7 @@
 
     const payload = {
       name: editingField.name.trim(),
+      description: editingField.description?.trim() || null,
       answerType: Number(editingField.answerType),
       assessmentType: editingField.assessmentType.trim()
     };
@@ -121,17 +135,14 @@
     let res;
     if (editingField.id) {
       // Update existing assessment
-      res = await fetch(
-        `${PUBLIC_API_URL}/assessments/${editingField.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${data.access}`
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+      res = await fetch(`${PUBLIC_API_URL}/assessments/${editingField.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${data.access}`
+        },
+        body: JSON.stringify(payload)
+      });
     }
 
     if (!res.ok) {
@@ -154,6 +165,7 @@
       },
       body: JSON.stringify({
         name: createName.trim(),
+        description: createDescription.trim() || null,
         assessmentType: selectedAssessmentType.trim(),
         answerType: Number(selectedFieldType)
       })
@@ -164,6 +176,7 @@
       return;
     }
     createName = '';
+    createDescription = '';
     selectedAssessmentType = 'Technology';
     selectedFieldType = '1';
     showCreateTypeModal = false;
@@ -252,7 +265,8 @@
                 <div class="space-y-2">
                   {#each assessments as assessment}
                     {@const AnswerTypeIcon =
-                      FIELD_TYPES.find((t) => t.label === assessment.answerType)?.icon ?? FileText}
+                      FIELD_TYPES.find((t) => t.label === assessment.answerType)
+                        ?.icon ?? FileText}
                     <button
                       class="hover:bg-card/80 hover:border-flutter-blue/30 w-full rounded-lg border bg-card p-4 text-left transition-colors"
                       onclick={() => openAssessmentFields(assessment)}
@@ -307,9 +321,7 @@
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
       <Dialog.Title>Update Assessment</Dialog.Title>
-      <Dialog.Description
-        >Update the assessment details</Dialog.Description
-      >
+      <Dialog.Description>Update the assessment details</Dialog.Description>
     </Dialog.Header>
 
     <div class="space-y-4 pt-4">
@@ -319,6 +331,17 @@
           id="assessmentName"
           placeholder="e.g., Product Viability"
           bind:value={editingField.name}
+        />
+      </div>
+
+      <div class="grid gap-2">
+        <Label for="assessmentDescription">Description (Optional)</Label>
+        <Textarea
+          id="assessmentDescription"
+          bind:value={editingField.description}
+          placeholder="Describe what this assessment is about..."
+          rows={3}
+          class="resize-none"
         />
       </div>
 
@@ -463,19 +486,28 @@
       </div>
 
       <div class="grid gap-2">
+        <Label for="createDescription">Description (Optional)</Label>
+        <Textarea
+          id="createDescription"
+          bind:value={createDescription}
+          placeholder="Describe what this assessment is about..."
+          rows={3}
+          class="resize-none"
+        />
+      </div>
+
+      <div class="grid gap-2">
         <Label>Field Type</Label>
         <Select.Root type="single" bind:value={selectedFieldType}>
           <Select.Trigger class="w-full">
             {#snippet children()}
               {@const SelectedIcon =
-                FIELD_TYPES.find(
-                  (t) => t.value === Number(selectedFieldType)
-                )?.icon ?? FileText}
+                FIELD_TYPES.find((t) => t.value === Number(selectedFieldType))
+                  ?.icon ?? FileText}
               <div class="flex items-center gap-2">
                 <SelectedIcon class="h-4 w-4" />
-                {FIELD_TYPES.find(
-                  (t) => t.value === Number(selectedFieldType)
-                )?.label ?? 'Select type'}
+                {FIELD_TYPES.find((t) => t.value === Number(selectedFieldType))
+                  ?.label ?? 'Select type'}
               </div>
             {/snippet}
           </Select.Trigger>
@@ -528,6 +560,7 @@
         onclick={() => {
           showCreateTypeModal = false;
           createName = '';
+          createDescription = '';
           selectedFieldType = '1';
         }}
       >

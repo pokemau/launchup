@@ -53,6 +53,10 @@ export class CreateAssessmentDto {
   @IsString()
   name: string;
 
+  @IsOptional()
+  @IsString()
+  description?: string;
+
   @IsEnum(AssessmentAnswerType)
   answerType: AssessmentAnswerType;
 }
@@ -61,6 +65,10 @@ export class UpdateAssessmentDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @IsOptional()
   @IsEnum(AssessmentAnswerType)
