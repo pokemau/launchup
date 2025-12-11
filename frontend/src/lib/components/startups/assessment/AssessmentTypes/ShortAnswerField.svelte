@@ -8,7 +8,7 @@
 </script>
 
 <div class="grid gap-2">
-  <AssessmentLabel description={description} />
+  <!-- <AssessmentLabel description={description} /> -->
   <Input
     type="text"
     placeholder={isReadOnly ? "No answer provided" : "Enter your answer"}

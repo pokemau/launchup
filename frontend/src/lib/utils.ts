@@ -149,7 +149,6 @@ export const getColumns = (): Array<{
 };
 
 export const getStartupMemberCount = (startup: any) => {
-
   if (!startup?.capsuleProposal) {
     return 1;
   }
@@ -381,7 +380,6 @@ export const getPriorityStyles = (
     10: 'bg-pink-700 hover:bg-pink-800'
   };
 
-  // Default styles if priority is out of range
   return priorityClasses[priority] || 'bg-gray-500 hover:bg-gray-600';
 };
 
@@ -395,23 +393,23 @@ export const getReadinessStyles = (
     | 'Investment'
 ) => {
   const readinessClasses = {
-    Technology: 'text-sky-300 bg-sky-700 hover:text-sky-400 hover:bg-sky-800',
-    Market: 'text-teal-300 bg-teal-700 hover:text-teal-400 hover:bg-teal-800',
+    Technology:
+      'text-violet-100 bg-violet-600/90 hover:bg-violet-700 border border-violet-500/30',
+    Market:
+      'text-blue-100 bg-blue-600/90 hover:bg-blue-700 border border-blue-500/30',
     Acceptance:
-      'text-orange-300 bg-orange-700 hover:text-orange-400 hover:bg-orange-800',
+      'text-emerald-100 bg-emerald-600/90 hover:bg-emerald-700 border border-emerald-500/30',
     Regulatory:
-      'text-fuchsia-300 bg-fuchsia-700 hover:text-fuchsia-400 hover:bg-fuchsia-800',
+      'text-rose-100 bg-rose-600/90 hover:bg-rose-700 border border-rose-500/30',
     Organizational:
-      'text-green-300 bg-green-700 hover:text-green-400 hover:bg-green-800',
+      'text-indigo-100 bg-indigo-600/90 hover:bg-indigo-700 border border-indigo-500/30',
     Investment:
-      'text-yellow-300 bg-yellow-600 hover:text-yellow-400 hover:bg-yellow-700'
+      'text-amber-100 bg-amber-600/90 hover:bg-amber-700 border border-amber-500/30'
   };
-
-  // Default styles if type is unrecognized
   return (
     readinessClasses[type] ||
-    'text-zinc-300 bg-zinc-500 hover:text-zinc-400 hover:bg-zinc-600'
-  ); // Backup gray
+    'text-zinc-100 bg-zinc-600/90 hover:bg-zinc-700 border border-zinc-500/30'
+  );
 };
 
 export function getProfileColor(firstName: string) {

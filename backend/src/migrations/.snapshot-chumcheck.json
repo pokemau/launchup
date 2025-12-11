@@ -112,6 +112,16 @@
           "length": 255,
           "mappedType": "string"
         },
+        "description": {
+          "name": "description",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": 255,
+          "mappedType": "string"
+        },
         "answer_type": {
           "name": "answer_type",
           "type": "smallint",

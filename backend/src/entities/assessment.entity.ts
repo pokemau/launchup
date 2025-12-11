@@ -22,6 +22,9 @@ export class Assessment {
   @Property()
   name!: string;
 
+  @Property({ nullable: true })
+  description?: string;
+
   @Enum(() => AssessmentAnswerType)
   answerType!: AssessmentAnswerType;
 

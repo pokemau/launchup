@@ -27,19 +27,25 @@
   let uploadedFiles: Array<{ url: string; fileName: string }> = [];
   let showDeleteConfirm = false;
   let fileToDeleteIndex: number | null = null;
+  let initialized = false;
 
   // Initialize uploaded files from existing JSON data
   $: {
-    if (fileUrl && uploadedFiles.length === 0) {
+    // Check value prop first (from answerValue), then fileUrl as fallback
+    const dataSource = value || fileUrl;
+    if (dataSource && !initialized) {
       try {
-        const parsed = JSON.parse(fileUrl);
+        const parsed = JSON.parse(dataSource);
         if (parsed.files && Array.isArray(parsed.files)) {
           uploadedFiles = parsed.files;
-          updateValue();
+          initialized = true;
         }
       } catch {
-        // Not JSON, ignore
+        // Not JSON, ignore - might be empty string or non-JSON data
+        initialized = true;
       }
+    } else if (!dataSource && !initialized) {
+      initialized = true;
     }
   }
 
@@ -224,7 +230,7 @@
 </script>
 
 <div class="grid gap-2">
-  <AssessmentLabel {description} />
+  <!-- <AssessmentLabel {description} /> -->
 
   {#if uploadedFiles.length > 0}
     <div class="space-y-2">
