@@ -317,8 +317,6 @@
   {/if}
   <h2 class="mt-6 text-xl font-bold">Required Assessments</h2>
 
-  {console.log(displayedAssessments())}
-
   <!-- Readiness Type Cards -->
   <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {#each readinessTypes as type}
