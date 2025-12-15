@@ -9,7 +9,7 @@ import { StartupApplicationDto } from 'src/startup/dto/startup.dto';
 @Injectable()
 export class AiService {
   private readonly ai: GoogleGenAI;
-  private readonly modelName = 'gemini-2.5-flash';
+  private readonly modelName = 'gemini-2.5-flash-lite';
 
   constructor(private config: ConfigService) {
     this.ai = new GoogleGenAI({
