@@ -197,11 +197,13 @@
     {@render error()}
   {:else if isRated()}
     {@render rated()}
-  {:else if isMentor(role)}
-    {@render mentor()}
   {:else}
-    <div>
-      <p>Looks like you haven't been rated yet</p>
+    <div class="mt-10 text-center text-2xl font-bold">
+      {#if isMentor(role)}
+        <p>You haven't rated this startup yet...</p>
+      {:else}
+        <p>Looks like you haven't been rated yet...</p>
+      {/if}
     </div>
   {/if}
 </div>
@@ -227,8 +229,7 @@
   <div class="flex h-full flex-col gap-3">
     <Can role={['Mentor', 'Manager as Mentor']} userRole={role}>
       <div class="flex justify-between">
-        <div class="flex h-fit justify-between rounded-lg bg-background">
-        </div>
+        <div class="flex h-fit justify-between rounded-lg bg-background"></div>
         {#if selectedTab === 'detailed'}
           <div class="flex h-fit justify-between rounded-lg bg-background">
             <Tabs.Root value={selectedReadinessTab}>
@@ -357,61 +358,5 @@
         </div>
       </div>
     {/if}
-  </div>
-{/snippet}
-
-{#snippet mentor()}
-  <div class="flex h-full flex-col gap-3">
-    <Stepper {current} />
-    <div class="flex h-full flex-col overflow-scroll">
-      <form method="post" bind:this={form} class="flex h-0 flex-col">
-        <Rubric
-          questionnaires={rubrics().technology}
-          step={1}
-          {current}
-          type={'technology'}
-        />
-        <Rubric
-          questionnaires={rubrics().acceptance}
-          step={2}
-          {current}
-          type={'acceptance'}
-        />
-        <Rubric
-          questionnaires={rubrics().market}
-          step={3}
-          {current}
-          type={'market'}
-        />
-        <Rubric
-          questionnaires={rubrics().regulatory}
-          step={4}
-          {current}
-          type={'regulatory'}
-        />
-        <Rubric
-          questionnaires={rubrics().organizational}
-          step={5}
-          {current}
-          type={'organizational'}
-        />
-        <Rubric
-          questionnaires={rubrics().investment}
-          step={6}
-          {current}
-          type={'investment'}
-        />
-      </form>
-    </div>
-    <div class="ml-auto flex gap-2">
-      <Button variant="secondary" onclick={previous} disabled={current === 0}
-        >Previous</Button
-      >
-      {#if current === 5}
-        <Button onclick={() => form.submit()}>Submit</Button>
-      {:else}
-        <Button onclick={next}>Next</Button>
-      {/if}
-    </div>
   </div>
 {/snippet}
